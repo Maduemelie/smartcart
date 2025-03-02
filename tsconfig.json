@@ -3,15 +3,25 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     }
   },
   "include": [
     "**/*.ts",
     "**/*.tsx",
     ".expo/types/**/*.ts",
-    "expo-env.d.ts"
+    "expo-env.d.ts",
+    "components/SearchBar.jsx",
+    "components/QuickAccess.jsx",
+    "components/Header.jsx",
+    "components/BottomTabs.jsx",
+    "constants/Colors.js",
+    "app/_layout.jsx",
+    "app/profile.jsx",
+    "app/malls.jsx",
+    "app/list.jsx",
+    "app/index.jsx",
+    "app/compare.jsx",
+    "app/list/history.jsx"
   ]
 }
