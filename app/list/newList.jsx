@@ -14,8 +14,7 @@ import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { useColorScheme } from '../../hooks/useColorScheme';
-import { useList } from '../../context/ListContext';
-import { createList } from '../../context/actions';
+import { useList } from '../../context/list/ListContext';
 import { router } from 'expo-router';
 import { createStyles } from '../../styles/newList.styles';
 
@@ -40,7 +39,8 @@ const UNITS = [
 export default function NewList() {
   const { colors } = useColorScheme();
   const styles = createStyles(colors);
-  const { dispatch } = useList();
+  const { createList } = useList(); // Update to get createList from context
+
   // List level state
   const [listName, setListName] = useState('');
 
@@ -179,36 +179,50 @@ export default function NewList() {
     }
   };
 
+  /**
+   * Handles saving a new list
+   * @function
+   * @param {string} listName - The name of the list
+   * @param {Array} items - The items to add to the list
+   * @returns {void}
+   */
   const handleSaveList = () => {
+    console.log('Saving list...', listName, items);
     // Validate list name
     if (!validateListName(listName)) return;
 
-    // Validate items array
-    if (items.length === 0) {
+    if (!items || items.length === 0) {
       Alert.alert('Error', 'Add at least one item to the list');
       return;
     }
-
-    // Create new list object
+    console.log('Saving list...', listName, items);
+    // Format items properly
+    const formattedItems = items?.map((item) => ({
+      id: item.id || Date.now().toString(),
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit,
+      purchased: false,
+      price: '',
+    }));
+    console.log('Formatted items:', formattedItems);
+    // Create new list object with proper structure
     const newList = {
+      id: Date.now().toString(),
       name: listName.trim(),
-      items: items,
-      completed: false,
+      items: formattedItems,
       dateCreated: new Date().toISOString(),
+      lastUpdated: new Date().toISOString(),
+      status: 'NEW',
     };
+    console.log('New list:', newList);
 
     try {
-      // Dispatch the create list action
-      dispatch(createList(newList));
-
-      // Show success message
+      createList(newList);
       Alert.alert('Success', 'Shopping list created successfully!', [
         {
           text: 'OK',
-          onPress: () => {
-            // Navigate back to lists page
-            router.back();
-          },
+          onPress: () => router.back(),
         },
       ]);
     } catch (error) {

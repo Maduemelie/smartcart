@@ -1,7 +1,7 @@
 import { createContext, useContext, useReducer, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { listReducer } from './listReducer';
-import { initializeListData, LIST_ACTIONS } from './actions';
+import { listReducer } from '../list/listReducer';
+import { initializeListData, LIST_ACTIONS } from '../actions';
 
 //generate initial list data
 

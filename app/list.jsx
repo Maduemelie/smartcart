@@ -10,7 +10,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '../hooks/useColorScheme';
-import { useList } from '../context/ListContext';
+import { useList } from '../context/list/ListContext';
 import { deleteList } from '../context/actions';
 import { useState } from 'react';
 

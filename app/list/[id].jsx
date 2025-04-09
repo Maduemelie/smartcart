@@ -12,13 +12,45 @@ import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '../../hooks/useColorScheme';
-import { useList } from '../../context/ListContext';
-import { LIST_ACTIONS, updateList } from '../../context/actions'; // Add this import
+import { useList } from '../../context/list/ListContext';
+
+// Move StoreSection outside the main component to prevent re-renders
+const StoreSection = ({ storeName, onStoreNameChange, colors }) => (
+  <View style={[styles.storeSection, { backgroundColor: colors.surface }]}>
+    <View style={styles.storeTitleRow}>
+      <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+        Store Details
+      </Text>
+    </View>
+
+    <View style={styles.storeInputContainer}>
+      <Ionicons
+        name="storefront-outline"
+        size={20}
+        color={colors.text.secondary}
+      />
+      <TextInput
+        style={[
+          styles.storeInput,
+          {
+            backgroundColor: colors.surface,
+            color: colors.text.primary,
+            borderColor: colors.text.secondary,
+          },
+        ]}
+        value={storeName}
+        onChangeText={onStoreNameChange}
+        placeholder="Enter store name"
+        placeholderTextColor={colors.text.secondary}
+      />
+    </View>
+  </View>
+);
 
 export default function ListDetail() {
   const { id } = useLocalSearchParams();
   const { colors } = useColorScheme();
-  const { state, dispatch } = useList();
+  const { state, updateList, updateItem, deleteList } = useList();
 
   // Get list and initialize state from existing data
   const list = state.lists.find((list) => list.id === id);
@@ -42,7 +74,6 @@ export default function ListDetail() {
   );
   const [storeName, setStoreName] = useState(list?.storeName || '');
   const [hasChanges, setHasChanges] = useState(false);
-  const [isEditingStore, setIsEditingStore] = useState(false);
 
   // Add handlers
   const handleTogglePurchased = (itemId) => {
@@ -77,37 +108,37 @@ export default function ListDetail() {
       item.id === itemId ? { ...item, [field]: value } : item
     );
 
-    dispatch({
-      type: LIST_ACTIONS.UPDATE_LIST,
-      payload: {
-        listId: list.id,
-        updatedList: { ...list, items: updatedItems },
-      },
+    updateList(list.id, {
+      ...list,
+      items: updatedItems,
     });
     setHasChanges(true);
   };
 
   // Modified save handler
   const handleSaveChanges = () => {
+    const checkedItemsCount =
+      Object.values(purchasedItems).filter(Boolean).length;
+    const allItemsChecked = checkedItemsCount === list.items.length;
+
     const updatedItems = list.items.map((item) => ({
       ...item,
       purchased: purchasedItems[item.id] || false,
       price: itemPrices[item.id] || '0',
     }));
 
-    dispatch({
-      type: LIST_ACTIONS.UPDATE_LIST,
-      payload: {
-        listId: list.id,
-        updatedList: {
-          ...list,
-          items: updatedItems,
-          storeName: storeName, // Save single store name
-        },
-      },
-    });
+    if (allItemsChecked) {
+      // If all items are checked, delete the list
+      deleteList(list.id);
+    } else {
+      // Otherwise update with remaining items
+      updateList(list.id, {
+        ...list,
+        items: updatedItems,
+        storeName: storeName,
+      });
+    }
 
-    // Show success feedback
     Alert.alert('Success', 'Changes saved successfully', [
       { text: 'OK', onPress: () => router.back() },
     ]);
@@ -126,47 +157,6 @@ export default function ListDetail() {
       </View>
     );
   }
-
-  const StoreSection = () => (
-    <Pressable
-      style={[styles.storeSection, { backgroundColor: colors.surface }]}
-      onPress={() => setIsEditingStore(true)}
-    >
-      <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
-        Store Details
-      </Text>
-
-      {isEditingStore ? (
-        <TextInput
-          style={[
-            styles.storeInput,
-            {
-              backgroundColor: colors.surface,
-              color: colors.text.primary,
-              borderColor: colors.text.secondary,
-            },
-          ]}
-          value={storeName}
-          onChangeText={handleStoreNameChange}
-          placeholder="Enter store name"
-          placeholderTextColor={colors.text.secondary}
-          autoFocus
-          onBlur={() => setIsEditingStore(false)}
-        />
-      ) : (
-        <View style={styles.storeDisplay}>
-          <Ionicons
-            name="storefront-outline"
-            size={20}
-            color={colors.text.secondary}
-          />
-          <Text style={[styles.storeText, { color: colors.text.primary }]}>
-            {storeName || 'Tap to add store name'}
-          </Text>
-        </View>
-      )}
-    </Pressable>
-  );
 
   return (
     <SafeAreaView
@@ -294,7 +284,11 @@ export default function ListDetail() {
         </View>
 
         {/* Store Input Section */}
-        <StoreSection />
+        <StoreSection
+          storeName={storeName}
+          onStoreNameChange={handleStoreNameChange}
+          colors={colors}
+        />
       </ScrollView>
 
       {/* Conditional Footer */}
@@ -441,12 +435,17 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   storeInput: {
-    marginTop: 8,
+    flex: 1,
     padding: 8,
     borderRadius: 4,
     borderWidth: StyleSheet.hairlineWidth,
-    fontSize: 14,
-    width: '100%',
+    fontSize: 16,
+  },
+  storeInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: 8,
   },
   storeSection: {
     padding: 16,
@@ -492,5 +491,11 @@ const styles = StyleSheet.create({
   storeText: {
     fontSize: 16,
     flex: 1,
+  },
+  storeTitleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
   },
 });

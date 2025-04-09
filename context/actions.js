@@ -14,38 +14,38 @@ export const initializeListData = (lists) => ({
   payload: lists,
 });
 
-export const createList = (list) => {
-  console.log('Creating list with payload:', list); // Debug log
-  return {
-    type: LIST_ACTIONS.CREATE_LIST,
-    payload: list,
-  };
-};
+// export const createList = (list) => {
+//   // console.log('Creating list with payload:', list); // Debug log
+//   return {
+//     type: LIST_ACTIONS.CREATE_LIST,
+//     payload: list,
+//   };
+// };
 
-export const addItem = (listId, item) => ({
-  type: LIST_ACTIONS.ADD_ITEM,
-  payload: { listId, item },
-});
+// export const addItem = (listId, item) => ({
+//   type: LIST_ACTIONS.ADD_ITEM,
+//   payload: { listId, item },
+// });
 
-export const deleteList = (listId) => ({
-  type: LIST_ACTIONS.DELETE_LIST,
-  payload: { listId },
-});
+// export const deleteList = (listId) => ({
+//   type: LIST_ACTIONS.DELETE_LIST,
+//   payload: { listId },
+// });
 
-export const updateList = (listId, updatedList) => ({
-  type: LIST_ACTIONS.UPDATE_LIST,
-  payload: { listId, updatedList },
-});
+// export const updateList = (listId, updatedList) => ({
+//   type: LIST_ACTIONS.UPDATE_LIST,
+//   payload: { listId, updatedList },
+// });
 
-export const updateItem = (listId, itemId, item) => ({
-  type: LIST_ACTIONS.UPDATE_ITEM,
-  payload: { listId, itemId, item },
-});
+// export const updateItem = (listId, itemId, item) => ({
+//   type: LIST_ACTIONS.UPDATE_ITEM,
+//   payload: { listId, itemId, item },
+// });
 
-export const removeItem = (listId, itemId) => ({
-  type: LIST_ACTIONS.REMOVE_ITEM,
-  payload: { listId, itemId },
-});
+// export const removeItem = (listId, itemId) => ({
+//   type: LIST_ACTIONS.REMOVE_ITEM,
+//   payload: { listId, itemId },
+// });
 
 // Mall Actions
 export const MALL_ACTIONS = {

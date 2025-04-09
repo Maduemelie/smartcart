@@ -5,7 +5,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { ColorSchemeContext } from '../constants/Colors';
 import { useColorScheme } from '../hooks/useColorScheme';
 import BottomTabs from '../components/BottomTabs';
-import { ListProvider } from '../context/ListContext';
+import { ListProvider } from '../context/list/ListContext';
 
 SplashScreen.preventAutoHideAsync();
 

@@ -1,4 +1,4 @@
-import { LIST_ACTIONS } from './actions';
+import { LIST_ACTIONS } from '../actions';
 
 export function listReducer(state, action) {
   switch (action.type) {
@@ -10,17 +10,18 @@ export function listReducer(state, action) {
       };
 
     case LIST_ACTIONS.CREATE_LIST:
+      const newList = {
+        ...action.payload,
+        id: action.payload.id || Date.now().toString(),
+        dateCreated: action.payload.dateCreated || new Date().toISOString(),
+        items: Array.isArray(action.payload.items) ? action.payload.items : [],
+      };
+
       return {
         ...state,
-        lists: [
-          ...state.lists,
-          {
-            id: Date.now().toString(),
-            dateCreated: new Date(),
-            items: [],
-            ...action.payload,
-          },
-        ],
+        lists: Array.isArray(state.lists)
+          ? [...state.lists, newList]
+          : [newList],
       };
 
     case LIST_ACTIONS.UPDATE_LIST:
