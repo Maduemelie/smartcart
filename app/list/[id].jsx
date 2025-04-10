@@ -13,6 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '../../hooks/useColorScheme';
 import { useList } from '../../context/list/ListContext';
+import { useMall } from '../../context/mall/MallContext';
+import { addPriceRecord, addMall } from '../../context/actions';
 
 // Move StoreSection outside the main component to prevent re-renders
 const StoreSection = ({ storeName, onStoreNameChange, colors }) => (
@@ -50,11 +52,17 @@ const StoreSection = ({ storeName, onStoreNameChange, colors }) => (
 export default function ListDetail() {
   const { id } = useLocalSearchParams();
   const { colors } = useColorScheme();
-  const { state, updateList, updateItem, deleteList, addPurchaseToHistory } =
-    useList();
+  const {
+    state: listState,
+    updateList,
+    updateItem,
+    deleteList,
+    addPurchaseToHistory,
+  } = useList();
+  const { dispatch: mallDispatch } = useMall();
 
   // Get list and initialize state from existing data
-  const list = state.lists.find((list) => list.id === id);
+  const list = listState.lists.find((list) => list.id === id);
   const [purchasedItems, setPurchasedItems] = useState(
     list?.items.reduce(
       (acc, item) => ({
@@ -118,7 +126,6 @@ export default function ListDetail() {
 
   // Modified save handler
   const handleSaveChanges = () => {
-    // Rename this variable to avoid conflict with state
     const purchasedItemsList = list.items
       .filter((item) => purchasedItems[item.id] === true)
       .map((item) => ({
@@ -128,7 +135,23 @@ export default function ListDetail() {
       }));
 
     if (purchasedItemsList.length > 0) {
+      // Add purchase to shopping history
       addPurchaseToHistory(list.id, purchasedItemsList, totalPrice, storeName);
+
+      // Update mall price history and statistics using action creators
+      purchasedItemsList.forEach((item) => {
+        mallDispatch(
+          addPriceRecord(storeName, item.id, Number(itemPrices[item.id]) || 0)
+        );
+      });
+
+      // Update mall if it doesn't exist using action creator
+      mallDispatch(
+        addMall({
+          name: storeName,
+          lastVisited: new Date().toISOString(),
+        })
+      );
     }
 
     // Update original list

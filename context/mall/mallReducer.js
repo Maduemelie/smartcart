@@ -10,6 +10,22 @@ export function mallReducer(state, action) {
       };
 
     case MALL_ACTIONS.ADD_MALL:
+      // Only add if mall doesn't exist
+      const mallExists = state.malls.some(
+        (mall) => mall.name.toLowerCase() === action.payload.name.toLowerCase()
+      );
+
+      if (mallExists) {
+        return {
+          ...state,
+          malls: state.malls.map((mall) =>
+            mall.name.toLowerCase() === action.payload.name.toLowerCase()
+              ? { ...mall, lastVisited: action.payload.lastVisited }
+              : mall
+          ),
+        };
+      }
+
       return {
         ...state,
         malls: [
