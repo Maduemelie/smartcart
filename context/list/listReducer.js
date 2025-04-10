@@ -91,6 +91,25 @@ export function listReducer(state, action) {
         ),
       };
 
+    case LIST_ACTIONS.ADD_TO_HISTORY:
+      return {
+        ...state,
+        purchaseHistory: [
+          ...state.purchaseHistory,
+          {
+            id: Date.now().toString(),
+            date: new Date().toISOString(),
+            ...action.payload,
+          },
+        ],
+      };
+
+    case LIST_ACTIONS.LOAD_HISTORY:
+      return {
+        ...state,
+        purchaseHistory: action.payload,
+      };
+
     default:
       return state;
   }

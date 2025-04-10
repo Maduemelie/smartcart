@@ -1,12 +1,23 @@
 import { createContext, useContext, useReducer, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { listReducer } from '../list/listReducer';
-import { initializeListData, LIST_ACTIONS } from '../actions';
+import {
+  initializeListData,
+  createList as createListAction,
+  addItem as addItemAction,
+  updateItem as updateItemAction,
+  removeItem as removeItemAction,
+  updateList as updateListAction,
+  deleteList as deleteListAction,
+  addToHistory,
+  loadHistory,
+} from '../actions';
 
 //generate initial list data
 
 const initialState = {
   lists: [],
+  purchaseHistory: [],
   error: null,
   isLoading: false,
 };
@@ -23,11 +34,17 @@ export function ListProvider({ children }) {
 
   const loadStoredData = async () => {
     try {
-      const storedLists = await AsyncStorage.getItem('smartcart_lists');
+      const [storedLists, storedHistory] = await Promise.all([
+        AsyncStorage.getItem('smartcart_lists'),
+        AsyncStorage.getItem('smartcart_history'),
+      ]);
+
       if (storedLists) {
         dispatch(initializeListData(JSON.parse(storedLists)));
       }
-      // If no stored data, keep using initial data
+      if (storedHistory) {
+        dispatch(loadHistory(JSON.parse(storedHistory)));
+      }
     } catch (error) {
       console.error('Error loading data:', error);
     }
@@ -39,60 +56,57 @@ export function ListProvider({ children }) {
 
   const saveStateToStorage = async () => {
     try {
-      // Check if state.lists exists and is an array before saving
-      if (state?.lists && Array.isArray(state.lists)) {
-        await AsyncStorage.setItem(
-          'smartcart_lists',
-          JSON.stringify(state.lists)
-        );
-      } else {
-        console.warn('Invalid lists data structure:', state?.lists);
-      }
+      await Promise.all([
+        AsyncStorage.setItem('smartcart_lists', JSON.stringify(state.lists)),
+        AsyncStorage.setItem(
+          'smartcart_history',
+          JSON.stringify(state.purchaseHistory)
+        ),
+      ]);
     } catch (error) {
       console.error('Error saving data:', error);
     }
   };
 
   const createList = (list) => {
-    dispatch({
-      type: LIST_ACTIONS.CREATE_LIST,
-      payload: list,
-    });
+    dispatch(createListAction(list));
   };
 
   const addItem = (listId, item) => {
-    dispatch({
-      type: LIST_ACTIONS.ADD_ITEM,
-      payload: { listId, item },
-    });
+    dispatch(addItemAction(listId, item));
   };
 
   const updateItem = (listId, itemId, updates) => {
-    dispatch({
-      type: LIST_ACTIONS.UPDATE_ITEM,
-      payload: { listId, itemId, updates },
-    });
+    dispatch(updateItemAction(listId, itemId, updates));
   };
 
   const removeItem = (listId, itemId) => {
-    dispatch({
-      type: LIST_ACTIONS.REMOVE_ITEM,
-      payload: { listId, itemId },
-    });
+    dispatch(removeItemAction(listId, itemId));
   };
 
   const updateList = (listId, updatedList) => {
-    dispatch({
-      type: LIST_ACTIONS.UPDATE_LIST,
-      payload: { listId, updatedList },
-    });
+    dispatch(updateListAction(listId, updatedList));
   };
 
   const deleteList = (listId) => {
-    dispatch({
-      type: LIST_ACTIONS.DELETE_LIST,
-      payload: { listId },
-    });
+    dispatch(deleteListAction(listId));
+  };
+
+  const addPurchaseToHistory = (
+    listId,
+    purchasedItems,
+    totalAmount,
+    storeName
+  ) => {
+    dispatch(
+      addToHistory({
+        listId,
+        items: purchasedItems,
+        totalAmount,
+        storeName,
+        purchaseDate: new Date().toISOString(),
+      })
+    );
   };
 
   return (
@@ -105,6 +119,7 @@ export function ListProvider({ children }) {
         removeItem,
         updateList,
         deleteList,
+        addPurchaseToHistory,
       }}
     >
       {children}

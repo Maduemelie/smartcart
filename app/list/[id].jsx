@@ -50,7 +50,8 @@ const StoreSection = ({ storeName, onStoreNameChange, colors }) => (
 export default function ListDetail() {
   const { id } = useLocalSearchParams();
   const { colors } = useColorScheme();
-  const { state, updateList, updateItem, deleteList } = useList();
+  const { state, updateList, updateItem, deleteList, addPurchaseToHistory } =
+    useList();
 
   // Get list and initialize state from existing data
   const list = state.lists.find((list) => list.id === id);
@@ -117,31 +118,34 @@ export default function ListDetail() {
 
   // Modified save handler
   const handleSaveChanges = () => {
-    const checkedItemsCount =
-      Object.values(purchasedItems).filter(Boolean).length;
-    const allItemsChecked = checkedItemsCount === list.items.length;
+    // Rename this variable to avoid conflict with state
+    const purchasedItemsList = list.items
+      .filter((item) => purchasedItems[item.id] === true)
+      .map((item) => ({
+        ...item,
+        price: itemPrices[item.id] || '0',
+        purchaseDate: new Date().toISOString(),
+      }));
 
+    if (purchasedItemsList.length > 0) {
+      addPurchaseToHistory(list.id, purchasedItemsList, totalPrice, storeName);
+    }
+
+    // Update original list
     const updatedItems = list.items.map((item) => ({
       ...item,
       purchased: purchasedItems[item.id] || false,
-      price: itemPrices[item.id] || '0',
+      price: itemPrices[item.id] || item.price,
     }));
 
-    if (allItemsChecked) {
-      // If all items are checked, delete the list
-      deleteList(list.id);
-    } else {
-      // Otherwise update with remaining items
-      updateList(list.id, {
-        ...list,
-        items: updatedItems,
-        storeName: storeName,
-      });
-    }
+    updateList(list.id, {
+      ...list,
+      items: updatedItems,
+      storeName,
+    });
 
-    Alert.alert('Success', 'Changes saved successfully', [
-      { text: 'OK', onPress: () => router.back() },
-    ]);
+    Alert.alert('Success', 'Changes saved successfully');
+    router.back();
   };
 
   // Calculate total
