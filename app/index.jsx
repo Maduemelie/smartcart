@@ -1,30 +1,66 @@
-import { View, ScrollView, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
-import Header from '../components/Header';
-import SearchBar from '../components/SearchBar';
 import QuickAccess from '../components/QuickAccess';
-// import BottomTabs from '../components/BottomTabs';
+import { SearchBar } from '../components/SearchBar';
+import { LoadingSpinner } from '../components/LoadingSpinner';
+import { useDataFetching } from '../hooks/useDataFetching';
 import { Colors } from '../constants/Colors';
+import { ErrorBoundary } from '../components/ErrorBoundary';
+import { useEffect, useRef } from 'react';
 
 export default function Home() {
+  const initialSyncComplete = useRef(false);
+
+  const { loading: listsLoading } = useDataFetching(
+    'recent_lists',
+    async () => {
+      // Fetch would happen here in a real app
+      return [];
+    }
+  );
+
+  useEffect(() => {
+    if (!listsLoading && !initialSyncComplete.current) {
+      initialSyncComplete.current = true;
+    }
+  }, [listsLoading]);
+
+  if (listsLoading && !initialSyncComplete.current) {
+    return <LoadingSpinner message="Setting up your shopping assistant..." />;
+  }
+
   return (
-    <SafeAreaView style={styles.container}>
-      <Stack.Screen
-        options={{
-          headerShown: false,
-        }}
-      />
-      <View style={styles.content}>
-        <Header />
-        <SearchBar />
-        <ScrollView showsVerticalScrollIndicator={false}>
+    <ErrorBoundary>
+      <SafeAreaView style={styles.container}>
+        <Stack.Screen
+          options={{
+            title: 'SmartCart',
+            headerLargeTitle: true,
+            headerSearchBarOptions: {
+              placeholder: 'Search lists, items, or malls',
+            },
+          }}
+        />
+
+        <ScrollView
+          style={styles.content}
+          contentContainerStyle={styles.contentContainer}
+        >
+          <SearchBar />
+
+          {/* Quick Access Section */}
+          <View style={styles.section}>
+            <Text style={styles.welcomeText}>Welcome to SmartCart</Text>
+            <Text style={styles.subtitleText}>
+              Your smart shopping assistant
+            </Text>
+          </View>
+
           <QuickAccess />
         </ScrollView>
-        <Text style={styles.title}>Welcome to SmartCart</Text>
-      </View>
-      {/* <BottomTabs /> */}
-    </SafeAreaView>
+      </SafeAreaView>
+    </ErrorBoundary>
   );
 }
 
@@ -35,12 +71,23 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    justifyContent: 'center',
+  },
+  contentContainer: {
+    paddingBottom: 24,
+  },
+  section: {
+    padding: 16,
     alignItems: 'center',
   },
-  title: {
+  welcomeText: {
     fontSize: 24,
     fontWeight: 'bold',
     color: Colors.text.primary,
+    marginBottom: 4,
+  },
+  subtitleText: {
+    fontSize: 16,
+    color: Colors.text.secondary,
+    marginBottom: 24,
   },
 });

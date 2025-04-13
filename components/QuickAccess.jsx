@@ -1,110 +1,176 @@
-import { StyleSheet, View, Text, Pressable } from 'react-native';
-import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useList } from '../context/list/ListContext';
+import { useMall } from '../context/mall/MallContext';
 import { Colors } from '../constants/Colors';
-import { useRouter } from 'expo-router';
-
-const features = [
-  {
-    icon: 'format-list-bulleted',
-    title: 'New List',
-    description: 'Create shopping list',
-    route: '/list/newList',
-  },
-  {
-    icon: 'store-search',
-    title: 'Find Best Prices',
-    description: 'Compare mall prices',
-    route: '/compare',
-  },
-  {
-    icon: 'history',
-    title: 'Recent Lists',
-    description: 'View past lists',
-    route: '/list/history',
-  },
-  {
-    icon: 'map-marker-multiple',
-    title: 'Saved Malls',
-    description: 'Manage mall list',
-    route: '/malls',
-  },
-];
 
 export default function QuickAccess() {
-  const router = useRouter();
+  const { state: listState } = useList();
+  const { state: mallState } = useMall();
+
+  const recentLists = listState.lists
+    .sort((a, b) => new Date(b.dateCreated) - new Date(a.dateCreated))
+    .slice(0, 3);
+
+  const favoriteMalls = mallState.malls
+    .filter((mall) => mallState.favorites.includes(mall.id))
+    .slice(0, 3);
+
+  const handleListPress = (listId) => {
+    router.push(`/list/${listId}`);
+  };
+
+  const handleMallPress = (mallId) => {
+    router.push(`/mall/${mallId}`);
+  };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Quick Actions</Text>
-      <View style={styles.grid}>
-        {features.map((item, index) => (
-          <Pressable
-            key={index}
-            style={({ pressed }) => [
-              styles.card,
-              { opacity: pressed ? 0.8 : 1 },
-            ]}
-            onPress={() => router.push(item.route)}
-          >
-            <View style={styles.iconContainer}>
-              <MaterialCommunityIcons
-                name={item.icon}
-                size={24}
-                color={Colors.text.inverse}
-              />
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.container}
+    >
+      {/* Recent Lists */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Recent Lists</Text>
+        <View style={styles.itemsContainer}>
+          {recentLists.map((list) => (
+            <Pressable
+              key={list.id}
+              style={styles.item}
+              onPress={() => handleListPress(list.id)}
+            >
+              <Ionicons name="list" size={24} color={Colors.primary} />
+              <Text style={styles.itemText} numberOfLines={1}>
+                {list.name}
+              </Text>
+              <Text style={styles.itemMeta}>
+                {new Date(list.dateCreated).toLocaleDateString()}
+              </Text>
+            </Pressable>
+          ))}
+          {recentLists.length === 0 && (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No recent lists</Text>
             </View>
-            <Text style={styles.cardTitle}>{item.title}</Text>
-            <Text style={styles.cardDescription}>{item.description}</Text>
-          </Pressable>
-        ))}
+          )}
+        </View>
       </View>
-    </View>
+
+      {/* Favorite Malls */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Favorite Malls</Text>
+        <View style={styles.itemsContainer}>
+          {favoriteMalls.map((mall) => (
+            <Pressable
+              key={mall.id}
+              style={styles.item}
+              onPress={() => handleMallPress(mall.id)}
+            >
+              <Ionicons name="storefront" size={24} color={Colors.primary} />
+              <Text style={styles.itemText} numberOfLines={1}>
+                {mall.name}
+              </Text>
+              <Text style={styles.itemMeta}>
+                {mall.location || 'No location set'}
+              </Text>
+            </Pressable>
+          ))}
+          {favoriteMalls.length === 0 && (
+            <View style={styles.emptyState}>
+              <Text style={styles.emptyStateText}>No favorite malls</Text>
+            </View>
+          )}
+        </View>
+      </View>
+
+      {/* Quick Actions */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <View style={styles.itemsContainer}>
+          <Pressable
+            style={styles.actionItem}
+            onPress={() => router.push('/list/newList')}
+          >
+            <Ionicons name="add-circle" size={24} color={Colors.primary} />
+            <Text style={styles.actionText}>New List</Text>
+          </Pressable>
+          <Pressable
+            style={styles.actionItem}
+            onPress={() => router.push('/compare')}
+          >
+            <Ionicons name="git-compare" size={24} color={Colors.primary} />
+            <Text style={styles.actionText}>Compare Prices</Text>
+          </Pressable>
+          <Pressable
+            style={styles.actionItem}
+            onPress={() => router.push('/list/history')}
+          >
+            <Ionicons name="time" size={24} color={Colors.primary} />
+            <Text style={styles.actionText}>View History</Text>
+          </Pressable>
+        </View>
+      </View>
+    </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     padding: 16,
+    gap: 20,
   },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 16,
+  section: {
+    minWidth: 280,
+    marginRight: 16,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
     color: Colors.text.primary,
+    marginBottom: 12,
   },
-  grid: {
+  itemsContainer: {
+    gap: 8,
+  },
+  item: {
+    backgroundColor: Colors.surface,
+    padding: 12,
+    borderRadius: 8,
     flexDirection: 'row',
-    flexWrap: 'wrap',
+    alignItems: 'center',
     gap: 12,
   },
-  card: {
-    width: '48%',
-    backgroundColor: Colors.surface,
-    padding: 16,
-    borderRadius: 12,
-    alignItems: 'center',
-    elevation: 2,
-    shadowColor: Colors.text.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-  },
-  iconContainer: {
-    backgroundColor: Colors.primary,
-    padding: 12,
-    borderRadius: 12,
-    marginBottom: 8,
-  },
-  cardTitle: {
+  itemText: {
+    flex: 1,
     fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
     color: Colors.text.primary,
-    marginBottom: 4,
   },
-  cardDescription: {
+  itemMeta: {
     fontSize: 12,
-    textAlign: 'center',
     color: Colors.text.secondary,
+  },
+  emptyState: {
+    padding: 16,
+    backgroundColor: Colors.surface,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    color: Colors.text.secondary,
+    fontSize: 14,
+  },
+  actionItem: {
+    backgroundColor: Colors.surface,
+    padding: 12,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  actionText: {
+    fontSize: 16,
+    color: Colors.text.primary,
   },
 });

@@ -113,3 +113,49 @@ export const updatePrice = (price) => ({
   type: PRICE_ACTIONS.UPDATE_PRICE,
   payload: price,
 });
+
+// Settings Actions
+export const SETTINGS_ACTIONS = {
+  INITIALIZE_SETTINGS: 'INITIALIZE_SETTINGS',
+  UPDATE_NOTIFICATIONS: 'UPDATE_NOTIFICATIONS',
+  UPDATE_LOCATION_SETTINGS: 'UPDATE_LOCATION_SETTINGS',
+  UPDATE_LANGUAGE: 'UPDATE_LANGUAGE',
+  UPDATE_CURRENCY: 'UPDATE_CURRENCY',
+  UPDATE_THEME: 'UPDATE_THEME',
+  UPDATE_USER_PROFILE: 'UPDATE_USER_PROFILE',
+};
+
+export const initializeSettings = (settings) => ({
+  type: SETTINGS_ACTIONS.INITIALIZE_SETTINGS,
+  payload: settings,
+});
+
+export const updateNotifications = (settings) => ({
+  type: SETTINGS_ACTIONS.UPDATE_NOTIFICATIONS,
+  payload: settings,
+});
+
+export const updateLocationSettings = (settings) => ({
+  type: SETTINGS_ACTIONS.UPDATE_LOCATION_SETTINGS,
+  payload: settings,
+});
+
+export const updateLanguage = (language) => ({
+  type: SETTINGS_ACTIONS.UPDATE_LANGUAGE,
+  payload: language,
+});
+
+export const updateCurrency = (currency) => ({
+  type: SETTINGS_ACTIONS.UPDATE_CURRENCY,
+  payload: currency,
+});
+
+export const updateTheme = (theme) => ({
+  type: SETTINGS_ACTIONS.UPDATE_THEME,
+  payload: theme,
+});
+
+export const updateUserProfile = (profile) => ({
+  type: SETTINGS_ACTIONS.UPDATE_USER_PROFILE,
+  payload: profile,
+});
