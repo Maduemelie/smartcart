@@ -1,6 +1,6 @@
 import { Stack } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
-import { View } from 'react-native';
+import { View, Alert } from 'react-native';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { ColorSchemeContext } from '../constants/Colors';
@@ -11,8 +11,7 @@ import { MallProvider } from '../context/mall/MallContext';
 import { SettingsProvider } from '../context/settings/SettingsContext';
 import { PriceProvider } from '../context/PriceContext';
 import { scheduleAutomaticBackup } from '../utils/backup';
-import { hydrateState } from '../utils/persistence';
-import { checkAndMigrateData } from '../utils/migration';
+import { hydrateState, clearPersistedState } from '../utils/persistence';
 import { LoadingSpinner } from '../components/LoadingSpinner';
 import SyncManager from '../utils/sync';
 
@@ -22,29 +21,45 @@ export default function AppContent() {
   const { colors, colorScheme } = useColorScheme();
   const [isLoading, setIsLoading] = useState(true);
   const [initialState, setInitialState] = useState(null);
+  const [initAttempts, setInitAttempts] = useState(0);
+
+  const initializeApp = async () => {
+    try {
+      // Load persisted state
+      const state = await hydrateState();
+      if (!state && initAttempts < 2) {
+        // If hydration fails, clear data and try again
+        await clearPersistedState();
+        setInitAttempts((prev) => prev + 1);
+        return;
+      }
+
+      setInitialState(state);
+
+      // Initialize sync manager and schedule backup
+      await SyncManager.initialize();
+      await scheduleAutomaticBackup();
+    } catch (error) {
+      console.error('Error initializing app:', error);
+      if (initAttempts < 2) {
+        // Try one more time after clearing data
+        await clearPersistedState();
+        setInitAttempts((prev) => prev + 1);
+      } else {
+        Alert.alert(
+          'Initialization Error',
+          'There was a problem loading your data. The app will start with default settings.',
+          [{ text: 'OK' }]
+        );
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const initializeApp = async () => {
-      try {
-        // Check and perform any necessary data migrations
-        await checkAndMigrateData();
-
-        // Load persisted state
-        const state = await hydrateState();
-        setInitialState(state);
-
-        // Initialize sync manager and schedule backup
-        await SyncManager.initialize();
-        await scheduleAutomaticBackup();
-      } catch (error) {
-        console.error('Error initializing app:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     initializeApp();
-  }, []);
+  }, [initAttempts]);
 
   if (isLoading) {
     return <LoadingSpinner message="Initializing app..." />;

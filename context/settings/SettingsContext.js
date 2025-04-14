@@ -1,7 +1,7 @@
 import { createContext, useContext, useReducer, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { settingsReducer } from './settingsReducer';
 import { initializeSettings } from '../actions';
+import { loadPersistedState, persistState } from '../../utils/persistence';
 
 const initialState = {
   notifications: {
@@ -35,17 +35,10 @@ export function SettingsProvider({ children }) {
 
   const loadStoredSettings = async () => {
     try {
-      const [settingsData, profileData] = await Promise.all([
-        AsyncStorage.getItem('user_settings'),
-        AsyncStorage.getItem('user_profile'),
-      ]);
-
-      const settings = settingsData ? JSON.parse(settingsData) : initialState;
-      const profile = profileData
-        ? JSON.parse(profileData)
-        : initialState.userProfile;
-
-      dispatch(initializeSettings({ ...settings, userProfile: profile }));
+      const data = await loadPersistedState('SETTINGS');
+      if (data) {
+        dispatch(initializeSettings(data));
+      }
     } catch (error) {
       console.error('Error loading settings:', error);
     }
@@ -57,19 +50,14 @@ export function SettingsProvider({ children }) {
 
   const saveSettings = async () => {
     try {
-      await Promise.all([
-        AsyncStorage.setItem(
-          'user_settings',
-          JSON.stringify({
-            notifications: state.notifications,
-            location: state.location,
-            language: state.language,
-            currency: state.currency,
-            theme: state.theme,
-          })
-        ),
-        AsyncStorage.setItem('user_profile', JSON.stringify(state.userProfile)),
-      ]);
+      await persistState('SETTINGS', {
+        notifications: state.notifications,
+        location: state.location,
+        language: state.language,
+        currency: state.currency,
+        theme: state.theme,
+        userProfile: state.userProfile,
+      });
     } catch (error) {
       console.error('Error saving settings:', error);
     }

@@ -1,5 +1,4 @@
 import { createContext, useContext, useReducer, useEffect } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { listReducer } from '../list/listReducer';
 import {
   initializeListData,
@@ -12,6 +11,7 @@ import {
   addToHistory,
   loadHistory,
 } from '../actions';
+import { loadPersistedState, persistState } from '../../utils/persistence';
 
 //generate initial list data
 
@@ -28,22 +28,15 @@ export function ListProvider({ children }) {
   const [state, dispatch] = useReducer(listReducer, initialState);
 
   useEffect(() => {
-    // Load stored data or use initial data
     loadStoredData();
   }, []);
 
   const loadStoredData = async () => {
     try {
-      const [storedLists, storedHistory] = await Promise.all([
-        AsyncStorage.getItem('smartcart_lists'),
-        AsyncStorage.getItem('smartcart_history'),
-      ]);
-
-      if (storedLists) {
-        dispatch(initializeListData(JSON.parse(storedLists)));
-      }
-      if (storedHistory) {
-        dispatch(loadHistory(JSON.parse(storedHistory)));
+      const data = await loadPersistedState('LISTS');
+      if (data) {
+        dispatch(initializeListData(data.lists));
+        dispatch(loadHistory(data.history));
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -56,13 +49,10 @@ export function ListProvider({ children }) {
 
   const saveStateToStorage = async () => {
     try {
-      await Promise.all([
-        AsyncStorage.setItem('smartcart_lists', JSON.stringify(state.lists)),
-        AsyncStorage.setItem(
-          'smartcart_history',
-          JSON.stringify(state.purchaseHistory)
-        ),
-      ]);
+      await persistState('LISTS', {
+        lists: state.lists,
+        history: state.purchaseHistory,
+      });
     } catch (error) {
       console.error('Error saving data:', error);
     }

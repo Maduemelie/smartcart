@@ -43,13 +43,10 @@ export default function Home() {
           }}
         />
 
-        <ScrollView
-          style={styles.content}
-          contentContainerStyle={styles.contentContainer}
-        >
+        <ScrollView contentContainerStyle={styles.contentContainer}>
           <SearchBar />
 
-          {/* Quick Access Section */}
+          {/* Welcome Section */}
           <View style={styles.section}>
             <Text style={styles.welcomeText}>Welcome to SmartCart</Text>
             <Text style={styles.subtitleText}>

@@ -2,6 +2,7 @@ import { createContext, useContext, useReducer, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { priceReducer } from './priceReducer';
 import { initializePriceData } from './actions';
+import { loadPersistedState, persistState } from '../utils/persistence';
 
 const initialState = {
   priceHistory: [],
@@ -23,8 +24,10 @@ export function PriceProvider({ children }) {
 
   const loadStoredData = async () => {
     try {
-      const prices = await AsyncStorage.getItem('smartcart_prices');
-      dispatch(initializePriceData(JSON.parse(prices) || []));
+      const data = await loadPersistedState('PRICES');
+      if (data) {
+        dispatch(initializePriceData(data.priceHistory));
+      }
     } catch (error) {
       console.error('Error loading data:', error);
     }
@@ -32,10 +35,10 @@ export function PriceProvider({ children }) {
 
   const saveStateToStorage = async () => {
     try {
-      await AsyncStorage.setItem(
-        'smartcart_prices',
-        JSON.stringify(state.priceHistory)
-      );
+      await persistState('PRICES', {
+        priceHistory: state.priceHistory,
+        lastUpdate: state.lastUpdate,
+      });
     } catch (error) {
       console.error('Error saving data:', error);
     }

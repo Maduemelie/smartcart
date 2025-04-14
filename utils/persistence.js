@@ -7,6 +7,21 @@ const STORAGE_KEYS = {
   PRICES: '@smartcart/prices',
 };
 
+const validateState = (state, key) => {
+  switch (key) {
+    case 'LISTS':
+      return state && Array.isArray(state.lists);
+    case 'MALLS':
+      return state && Array.isArray(state.malls);
+    case 'SETTINGS':
+      return state && typeof state === 'object';
+    case 'PRICES':
+      return state && Array.isArray(state.priceHistory);
+    default:
+      return true;
+  }
+};
+
 export const persistState = async (key, state) => {
   try {
     const serializedState = JSON.stringify(state);
@@ -24,9 +39,23 @@ export const loadPersistedState = async (key) => {
     if (serializedState === null) {
       return null;
     }
-    return JSON.parse(serializedState);
+
+    const parsedState = JSON.parse(serializedState);
+
+    // Validate the loaded state
+    if (!validateState(parsedState, key)) {
+      console.warn(
+        `Invalid state structure for ${key}, clearing corrupted data`
+      );
+      await AsyncStorage.removeItem(STORAGE_KEYS[key]);
+      return null;
+    }
+
+    return parsedState;
   } catch (error) {
     console.error(`Error loading ${key} state:`, error);
+    // Clear corrupted data
+    await AsyncStorage.removeItem(STORAGE_KEYS[key]);
     return null;
   }
 };
@@ -67,6 +96,16 @@ export const hydrateState = async () => {
     };
   } catch (error) {
     console.error('Error hydrating state:', error);
-    return null;
+    // Return default state instead of null
+    return {
+      lists: { lists: [], history: [] },
+      malls: { malls: [], favorites: [] },
+      settings: {
+        theme: 'system',
+        notifications: true,
+        autoBackup: true,
+      },
+      prices: { priceHistory: [], lastUpdate: null },
+    };
   }
 };

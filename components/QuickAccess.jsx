@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useList } from '../context/list/ListContext';
@@ -26,11 +26,35 @@ export default function QuickAccess() {
   };
 
   return (
-    <ScrollView
-      horizontal
-      showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.container}
-    >
+    <View style={styles.container}>
+      {/* Quick Actions - Moved to top for better visibility */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <View style={styles.itemsGrid}>
+          <Pressable
+            style={styles.actionItem}
+            onPress={() => router.push('/list/newList')}
+          >
+            <Ionicons name="add-circle" size={24} color={Colors.primary} />
+            <Text style={styles.actionText}>New List</Text>
+          </Pressable>
+          <Pressable
+            style={styles.actionItem}
+            onPress={() => router.push('/compare')}
+          >
+            <Ionicons name="git-compare" size={24} color={Colors.primary} />
+            <Text style={styles.actionText}>Compare</Text>
+          </Pressable>
+          <Pressable
+            style={styles.actionItem}
+            onPress={() => router.push('/list/history')}
+          >
+            <Ionicons name="time" size={24} color={Colors.primary} />
+            <Text style={styles.actionText}>History</Text>
+          </Pressable>
+        </View>
+      </View>
+
       {/* Recent Lists */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Recent Lists</Text>
@@ -42,12 +66,19 @@ export default function QuickAccess() {
               onPress={() => handleListPress(list.id)}
             >
               <Ionicons name="list" size={24} color={Colors.primary} />
-              <Text style={styles.itemText} numberOfLines={1}>
-                {list.name}
-              </Text>
-              <Text style={styles.itemMeta}>
-                {new Date(list.dateCreated).toLocaleDateString()}
-              </Text>
+              <View style={styles.itemContent}>
+                <Text style={styles.itemText} numberOfLines={1}>
+                  {list.name}
+                </Text>
+                <Text style={styles.itemMeta}>
+                  {new Date(list.dateCreated).toLocaleDateString()}
+                </Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={Colors.text.secondary}
+              />
             </Pressable>
           ))}
           {recentLists.length === 0 && (
@@ -69,12 +100,19 @@ export default function QuickAccess() {
               onPress={() => handleMallPress(mall.id)}
             >
               <Ionicons name="storefront" size={24} color={Colors.primary} />
-              <Text style={styles.itemText} numberOfLines={1}>
-                {mall.name}
-              </Text>
-              <Text style={styles.itemMeta}>
-                {mall.location || 'No location set'}
-              </Text>
+              <View style={styles.itemContent}>
+                <Text style={styles.itemText} numberOfLines={1}>
+                  {mall.name}
+                </Text>
+                <Text style={styles.itemMeta}>
+                  {mall.location || 'No location set'}
+                </Text>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color={Colors.text.secondary}
+              />
             </Pressable>
           ))}
           {favoriteMalls.length === 0 && (
@@ -84,46 +122,17 @@ export default function QuickAccess() {
           )}
         </View>
       </View>
-
-      {/* Quick Actions */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Quick Actions</Text>
-        <View style={styles.itemsContainer}>
-          <Pressable
-            style={styles.actionItem}
-            onPress={() => router.push('/list/newList')}
-          >
-            <Ionicons name="add-circle" size={24} color={Colors.primary} />
-            <Text style={styles.actionText}>New List</Text>
-          </Pressable>
-          <Pressable
-            style={styles.actionItem}
-            onPress={() => router.push('/compare')}
-          >
-            <Ionicons name="git-compare" size={24} color={Colors.primary} />
-            <Text style={styles.actionText}>Compare Prices</Text>
-          </Pressable>
-          <Pressable
-            style={styles.actionItem}
-            onPress={() => router.push('/list/history')}
-          >
-            <Ionicons name="time" size={24} color={Colors.primary} />
-            <Text style={styles.actionText}>View History</Text>
-          </Pressable>
-        </View>
-      </View>
-    </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     padding: 16,
-    gap: 20,
+    gap: 24,
   },
   section: {
-    minWidth: 280,
-    marginRight: 16,
+    width: '100%',
   },
   sectionTitle: {
     fontSize: 18,
@@ -134,27 +143,35 @@ const styles = StyleSheet.create({
   itemsContainer: {
     gap: 8,
   },
+  itemsGrid: {
+    flexDirection: 'row',
+    gap: 8,
+    justifyContent: 'space-between',
+  },
   item: {
     backgroundColor: Colors.surface,
-    padding: 12,
-    borderRadius: 8,
+    padding: 16,
+    borderRadius: 12,
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
   },
-  itemText: {
+  itemContent: {
     flex: 1,
+  },
+  itemText: {
     fontSize: 16,
     color: Colors.text.primary,
+    marginBottom: 4,
   },
   itemMeta: {
-    fontSize: 12,
+    fontSize: 13,
     color: Colors.text.secondary,
   },
   emptyState: {
     padding: 16,
     backgroundColor: Colors.surface,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
   },
   emptyStateText: {
@@ -163,14 +180,17 @@ const styles = StyleSheet.create({
   },
   actionItem: {
     backgroundColor: Colors.surface,
-    padding: 12,
-    borderRadius: 8,
-    flexDirection: 'row',
+    padding: 16,
+    borderRadius: 12,
     alignItems: 'center',
-    gap: 12,
+    justifyContent: 'center',
+    flex: 1,
+    gap: 8,
+    minWidth: 90,
   },
   actionText: {
-    fontSize: 16,
+    fontSize: 14,
     color: Colors.text.primary,
+    textAlign: 'center',
   },
 });
