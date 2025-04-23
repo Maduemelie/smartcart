@@ -1,10 +1,19 @@
-import { View, Text, StyleSheet, ScrollView, Pressable } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Pressable,
+  Modal,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { useMall } from '../../context/mall/MallContext';
 import { MallLocation } from '../../components/MallLocation';
+import { OperatingHours } from '../../components/OperatingHours';
+import { StoreManagement } from '../../components/StoreManagement';
 import { Colors } from '../../constants/Colors';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
@@ -45,10 +54,52 @@ function BusinessHours({ hours }) {
   );
 }
 
+function StoreList({ stores, onEditStore }) {
+  if (!stores || stores.length === 0) {
+    return (
+      <View style={styles.emptyState}>
+        <Text style={styles.emptyStateText}>No stores added yet</Text>
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.storeList}>
+      {stores.map((store) => (
+        <Pressable
+          key={store.id}
+          style={({ pressed }) => [
+            styles.storeCard,
+            { opacity: pressed ? 0.7 : 1 },
+          ]}
+          onPress={() => onEditStore(store)}
+        >
+          <View style={styles.storeInfo}>
+            <Text style={styles.storeName}>{store.name}</Text>
+            <Text style={styles.storeCategory}>{store.category}</Text>
+            <Text style={styles.storeLocation}>
+              {store.floor
+                ? `Floor ${store.floor} - ${store.location}`
+                : store.location}
+            </Text>
+          </View>
+          <Ionicons
+            name="chevron-forward"
+            size={20}
+            color={Colors.text.secondary}
+          />
+        </Pressable>
+      ))}
+    </View>
+  );
+}
+
 export default function MallDetail() {
   const { id } = useLocalSearchParams();
   const { state } = useMall();
   const [isLoading] = useState(false);
+  const [showStoreModal, setShowStoreModal] = useState(false);
+  const [selectedStore, setSelectedStore] = useState(null);
 
   const mall = state.malls.find((m) => m.id === id) || {
     name: 'Unknown Mall',
@@ -57,6 +108,17 @@ export default function MallDetail() {
     phone: '',
     email: '',
     website: '',
+    stores: [],
+  };
+
+  const handleAddStore = () => {
+    setSelectedStore(null);
+    setShowStoreModal(true);
+  };
+
+  const handleEditStore = (store) => {
+    setSelectedStore(store);
+    setShowStoreModal(true);
   };
 
   if (isLoading) {
@@ -69,7 +131,11 @@ export default function MallDetail() {
         <Stack.Screen
           options={{
             title: mall.name,
-            headerTitleStyle: { fontSize: 18 },
+            headerRight: () => (
+              <Pressable onPress={handleAddStore} style={styles.addButton}>
+                <Ionicons name="add-circle" size={24} color={Colors.primary} />
+              </Pressable>
+            ),
           }}
         />
 
@@ -83,15 +149,15 @@ export default function MallDetail() {
           {/* Business Hours Section */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Business Hours</Text>
-            <View style={styles.card}>
-              <BusinessHours hours={mall.hours} />
+            <View style={[styles.card, { backgroundColor: Colors.surface }]}>
+              <OperatingHours hours={mall.hours} />
             </View>
           </View>
 
           {/* Contact Information */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Contact Information</Text>
-            <View style={styles.card}>
+            <View style={[styles.card, { backgroundColor: Colors.surface }]}>
               {mall.phone && (
                 <Pressable style={styles.contactItem}>
                   <Ionicons
@@ -127,46 +193,29 @@ export default function MallDetail() {
             </View>
           </View>
 
-          {/* Recent Price Updates */}
+          {/* Stores Section */}
           <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: Colors.text.primary }]}>
-              Recent Price Updates
-            </Text>
-            <View style={[styles.card, { backgroundColor: Colors.surface }]}>
-              {state.priceHistory
-                .filter((record) => record.mallId === id)
-                .slice(0, 5)
-                .map((record) => (
-                  <View key={record.id} style={styles.priceUpdateItem}>
-                    <Text
-                      style={[styles.itemName, { color: Colors.text.primary }]}
-                    >
-                      {record.itemName}
-                    </Text>
-                    <Text style={styles.priceText}>
-                      ₦{record.price.toLocaleString()}
-                    </Text>
-                    <Text
-                      style={[
-                        styles.updateDate,
-                        { color: Colors.text.secondary },
-                      ]}
-                    >
-                      {new Date(record.date).toLocaleDateString()}
-                    </Text>
-                  </View>
-                ))}
-              {state.priceHistory.filter((record) => record.mallId === id)
-                .length === 0 && (
-                <Text
-                  style={[styles.emptyText, { color: Colors.text.secondary }]}
-                >
-                  No price updates yet
-                </Text>
-              )}
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Stores</Text>
+              <Pressable onPress={handleAddStore} style={styles.addStoreButton}>
+                <Text style={styles.addStoreText}>Add Store</Text>
+              </Pressable>
             </View>
+            <StoreList stores={mall.stores} onEditStore={handleEditStore} />
           </View>
         </ScrollView>
+
+        <Modal
+          visible={showStoreModal}
+          animationType="slide"
+          onRequestClose={() => setShowStoreModal(false)}
+        >
+          <StoreManagement
+            mallId={id}
+            initialStore={selectedStore}
+            onClose={() => setShowStoreModal(false)}
+          />
+        </Modal>
       </SafeAreaView>
     </ErrorBoundary>
   );
@@ -234,32 +283,59 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.text.primary,
   },
-  priceUpdateItem: {
+  storeList: {
+    gap: 12,
+  },
+  storeCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 8,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.accent + '20',
+    padding: 16,
+    backgroundColor: Colors.surface,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: Colors.text.primary,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
-  itemName: {
+  storeInfo: {
     flex: 1,
-    fontSize: 16,
-    color: Colors.text.primary,
   },
-  priceText: {
+  storeName: {
     fontSize: 16,
-    color: Colors.primary,
     fontWeight: '600',
-    marginHorizontal: 12,
+    color: Colors.text.primary,
+    marginBottom: 4,
   },
-  updateDate: {
+  storeCategory: {
+    fontSize: 14,
+    color: Colors.text.secondary,
+    marginBottom: 2,
+  },
+  storeLocation: {
     fontSize: 14,
     color: Colors.text.secondary,
   },
-  emptyText: {
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  addStoreButton: {
+    padding: 8,
+  },
+  addStoreText: {
+    color: Colors.primary,
     fontSize: 16,
-    textAlign: 'center',
-    marginTop: 8,
+    fontWeight: '500',
+  },
+  emptyState: {
+    padding: 24,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: Colors.text.secondary,
   },
 });

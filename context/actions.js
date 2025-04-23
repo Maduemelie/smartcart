@@ -69,6 +69,9 @@ export const MALL_ACTIONS = {
   UPDATE_LAST_VISITED: 'UPDATE_LAST_VISITED',
   ADD_LIST_TO_MALL: 'ADD_LIST_TO_MALL',
   REMOVE_LIST_FROM_MALL: 'REMOVE_LIST_FROM_MALL',
+  ADD_STORE: 'ADD_STORE',
+  UPDATE_STORE: 'UPDATE_STORE',
+  DELETE_STORE: 'DELETE_STORE',
 };
 
 export const initializeMallData = (malls) => ({
@@ -119,6 +122,21 @@ export const addListToMall = (mallId, listId) => ({
 export const removeListFromMall = (mallId, listId) => ({
   type: MALL_ACTIONS.REMOVE_LIST_FROM_MALL,
   payload: { mallId, listId },
+});
+
+export const addStore = (mallId, store) => ({
+  type: MALL_ACTIONS.ADD_STORE,
+  payload: { mallId, store },
+});
+
+export const updateStore = (mallId, storeId, updates) => ({
+  type: MALL_ACTIONS.UPDATE_STORE,
+  payload: { mallId, storeId, updates },
+});
+
+export const deleteStore = (mallId, storeId) => ({
+  type: MALL_ACTIONS.DELETE_STORE,
+  payload: { mallId, storeId },
 });
 
 // Price Actions

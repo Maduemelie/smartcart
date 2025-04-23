@@ -43,14 +43,17 @@ export default function NewMall() {
     email: '',
     website: '',
     hours: {
-      monday: { open: '09:00', close: '21:00' },
-      tuesday: { open: '09:00', close: '21:00' },
-      wednesday: { open: '09:00', close: '21:00' },
-      thursday: { open: '09:00', close: '21:00' },
-      friday: { open: '09:00', close: '21:00' },
-      saturday: { open: '09:00', close: '21:00' },
-      sunday: { open: '09:00', close: '21:00' },
+      monday: { open: '09:00', close: '21:00', isClosed: false },
+      tuesday: { open: '09:00', close: '21:00', isClosed: false },
+      wednesday: { open: '09:00', close: '21:00', isClosed: false },
+      thursday: { open: '09:00', close: '21:00', isClosed: false },
+      friday: { open: '09:00', close: '21:00', isClosed: false },
+      saturday: { open: '09:00', close: '21:00', isClosed: false },
+      sunday: { open: '09:00', close: '21:00', isClosed: true },
     },
+    storeTypes: [],
+    description: '',
+    amenities: [],
   });
 
   useEffect(() => {
@@ -90,15 +93,46 @@ export default function NewMall() {
     if (!mallData.coordinates) {
       newErrors.location = 'Please select a location on the map';
     }
-    if (mallData.email && !mallData.email.includes('@')) {
+    if (mallData.phone && !/^\+?[\d\s-]{10,}$/.test(mallData.phone.trim())) {
+      newErrors.phone = 'Invalid phone number';
+    }
+    if (mallData.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mallData.email)) {
       newErrors.email = 'Invalid email address';
     }
-    if (mallData.website && !mallData.website.startsWith('http')) {
-      newErrors.website = 'Website should start with http:// or https://';
+    if (mallData.website && !isValidUrl(mallData.website)) {
+      newErrors.website = 'Invalid website URL';
+    }
+
+    // Validate operating hours
+    const days = Object.keys(mallData.hours);
+    const invalidHours = days.some((day) => {
+      const { open, close, isClosed } = mallData.hours[day];
+      if (!isClosed && (!isValidTime(open) || !isValidTime(close))) {
+        return true;
+      }
+      return false;
+    });
+
+    if (invalidHours) {
+      newErrors.hours = 'Invalid operating hours format';
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const isValidTime = (time) => {
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    return timeRegex.test(time);
+  };
+
+  const isValidUrl = (url) => {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
   };
 
   const handleMapPress = async (event) => {

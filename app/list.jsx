@@ -185,14 +185,10 @@ export default function List() {
               renderItem={renderItem}
               estimatedItemSize={200}
               keyExtractor={(item) => item.id}
-              contentContainerStyle={styles.listContainer}
-              ListEmptyComponent={
-                <Text
-                  style={[styles.emptyText, { color: colors.text.secondary }]}
-                >
-                  No lists found
-                </Text>
-              }
+              contentContainerStyle={{
+                padding: 8,
+                backgroundColor: colors.background,
+              }}
             />
           </View>
         )}

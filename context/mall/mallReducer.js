@@ -86,10 +86,69 @@ export function mallReducer(state, action) {
         mallStats: remainingStats,
       };
 
+    case MALL_ACTIONS.ADD_STORE:
+      const { mallId, store } = action.payload;
+      return {
+        ...state,
+        malls: state.malls.map((mall) =>
+          mall.id === mallId
+            ? {
+                ...mall,
+                stores: [
+                  ...(mall.stores || []),
+                  { ...store, id: Date.now().toString() },
+                ],
+                updatedAt: new Date().toISOString(),
+              }
+            : mall
+        ),
+      };
+
+    case MALL_ACTIONS.UPDATE_STORE:
+      const { mallId: updateMallId, storeId, updates } = action.payload;
+      return {
+        ...state,
+        malls: state.malls.map((mall) =>
+          mall.id === updateMallId
+            ? {
+                ...mall,
+                stores: mall.stores.map((store) =>
+                  store.id === storeId
+                    ? {
+                        ...store,
+                        ...updates,
+                        updatedAt: new Date().toISOString(),
+                      }
+                    : store
+                ),
+                updatedAt: new Date().toISOString(),
+              }
+            : mall
+        ),
+      };
+
+    case MALL_ACTIONS.DELETE_STORE:
+      const { mallId: deleteMallId, storeId: deleteStoreId } = action.payload;
+      return {
+        ...state,
+        malls: state.malls.map((mall) =>
+          mall.id === deleteMallId
+            ? {
+                ...mall,
+                stores: mall.stores.filter(
+                  (store) => store.id !== deleteStoreId
+                ),
+                updatedAt: new Date().toISOString(),
+              }
+            : mall
+        ),
+      };
+
     case MALL_ACTIONS.ADD_PRICE_RECORD:
       const record = {
         id: Date.now().toString(),
         mallId: action.payload.mallId,
+        storeId: action.payload.storeId,
         itemId: action.payload.itemId,
         itemName: action.payload.itemName,
         price: action.payload.price,
@@ -101,8 +160,19 @@ export function mallReducer(state, action) {
         totalLists: 0,
         totalPriceUpdates: 0,
         averagePrices: {},
+        storeStats: {},
         lastUpdate: new Date().toISOString(),
       };
+
+      // Update store-specific price history
+      const storeStats = currentStats.storeStats[action.payload.storeId] || {
+        totalPriceUpdates: 0,
+        averagePrices: {},
+      };
+
+      const storePrices =
+        storeStats.averagePrices[action.payload.itemName] || [];
+      const newStorePrices = [...storePrices, action.payload.price].slice(-5);
 
       const currentPrices =
         currentStats.averagePrices[action.payload.itemName] || [];
@@ -111,7 +181,7 @@ export function mallReducer(state, action) {
         [action.payload.itemName]: [
           ...currentPrices,
           action.payload.price,
-        ].slice(-5), // Keep last 5 prices
+        ].slice(-5),
       };
 
       return {
@@ -119,7 +189,18 @@ export function mallReducer(state, action) {
         priceHistory: [...state.priceHistory, record],
         malls: state.malls.map((mall) =>
           mall.id === action.payload.mallId
-            ? { ...mall, lastVisited: new Date().toISOString() }
+            ? {
+                ...mall,
+                lastVisited: new Date().toISOString(),
+                stores: mall.stores.map((store) =>
+                  store.id === action.payload.storeId
+                    ? {
+                        ...store,
+                        lastPriceUpdate: new Date().toISOString(),
+                      }
+                    : store
+                ),
+              }
             : mall
         ),
         mallStats: {
@@ -128,18 +209,29 @@ export function mallReducer(state, action) {
             ...currentStats,
             totalPriceUpdates: currentStats.totalPriceUpdates + 1,
             averagePrices: newAveragePrices,
+            storeStats: {
+              ...currentStats.storeStats,
+              [action.payload.storeId]: {
+                ...storeStats,
+                totalPriceUpdates: storeStats.totalPriceUpdates + 1,
+                averagePrices: {
+                  ...storeStats.averagePrices,
+                  [action.payload.itemName]: newStorePrices,
+                },
+              },
+            },
             lastUpdate: new Date().toISOString(),
           },
         },
       };
 
     case MALL_ACTIONS.SET_FAVORITE:
-      const { mallId, isFavorite } = action.payload;
+      const { mallId: favoriteMallId, isFavorite } = action.payload;
       return {
         ...state,
         favorites: isFavorite
-          ? [...state.favorites, mallId]
-          : state.favorites.filter((id) => id !== mallId),
+          ? [...state.favorites, favoriteMallId]
+          : state.favorites.filter((id) => id !== favoriteMallId),
       };
 
     case MALL_ACTIONS.UPDATE_MALL_STATS:

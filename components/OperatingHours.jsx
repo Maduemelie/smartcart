@@ -1,4 +1,4 @@
-import { View, Text, StyleSheet, TextInput } from 'react-native';
+import { View, Text, StyleSheet, TextInput, Switch } from 'react-native';
 import { Colors } from '../constants/Colors';
 
 export function OperatingHours({ hours, onUpdate, editable = false }) {
@@ -15,14 +15,39 @@ export function OperatingHours({ hours, onUpdate, editable = false }) {
   const today = new Date().getDay();
   const adjustedDay = today === 0 ? 6 : today - 1;
 
+  const validateTime = (time) => {
+    if (!time) return false;
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    return timeRegex.test(time);
+  };
+
   const handleTimeChange = (day, type, value) => {
+    if (!onUpdate || !editable) return;
+
+    // Format time input
+    let formattedTime = value;
+    if (value.length === 4 && !value.includes(':')) {
+      formattedTime = value.slice(0, 2) + ':' + value.slice(2);
+    }
+
+    onUpdate({
+      ...hours,
+      [day]: {
+        ...hours[day],
+        [type]: formattedTime,
+        isClosed: hours[day].isClosed || false,
+      },
+    });
+  };
+
+  const toggleClosed = (day) => {
     if (!onUpdate || !editable) return;
 
     onUpdate({
       ...hours,
       [day]: {
         ...hours[day],
-        [type]: value,
+        isClosed: !hours[day].isClosed,
       },
     });
   };
@@ -42,44 +67,66 @@ export function OperatingHours({ hours, onUpdate, editable = false }) {
           <View style={styles.timeContainer}>
             {editable ? (
               <>
-                <TextInput
-                  style={[
-                    styles.timeInput,
-                    {
-                      color:
-                        adjustedDay === index
-                          ? Colors.primary
-                          : Colors.text.primary,
-                    },
-                  ]}
-                  value={hours[day].open}
-                  onChangeText={(text) => handleTimeChange(day, 'open', text)}
-                  placeholder="09:00"
-                  keyboardType="numbers-and-punctuation"
+                <Switch
+                  value={!hours[day].isClosed}
+                  onValueChange={() => toggleClosed(day)}
+                  trackColor={{
+                    false: Colors.error.main,
+                    true: Colors.primary,
+                  }}
                 />
-                <Text
-                  style={[
-                    styles.timeText,
-                    adjustedDay === index && styles.todayText,
-                  ]}
-                >
-                  -
-                </Text>
-                <TextInput
-                  style={[
-                    styles.timeInput,
-                    {
-                      color:
-                        adjustedDay === index
-                          ? Colors.primary
-                          : Colors.text.primary,
-                    },
-                  ]}
-                  value={hours[day].close}
-                  onChangeText={(text) => handleTimeChange(day, 'close', text)}
-                  placeholder="21:00"
-                  keyboardType="numbers-and-punctuation"
-                />
+                {!hours[day].isClosed ? (
+                  <>
+                    <TextInput
+                      style={[
+                        styles.timeInput,
+                        !validateTime(hours[day].open) && styles.invalidTime,
+                        {
+                          color:
+                            adjustedDay === index
+                              ? Colors.primary
+                              : Colors.text.primary,
+                        },
+                      ]}
+                      value={hours[day].open}
+                      onChangeText={(text) =>
+                        handleTimeChange(day, 'open', text)
+                      }
+                      placeholder="09:00"
+                      keyboardType="numbers-and-punctuation"
+                      maxLength={5}
+                    />
+                    <Text
+                      style={[
+                        styles.timeText,
+                        adjustedDay === index && styles.todayText,
+                      ]}
+                    >
+                      -
+                    </Text>
+                    <TextInput
+                      style={[
+                        styles.timeInput,
+                        !validateTime(hours[day].close) && styles.invalidTime,
+                        {
+                          color:
+                            adjustedDay === index
+                              ? Colors.primary
+                              : Colors.text.primary,
+                        },
+                      ]}
+                      value={hours[day].close}
+                      onChangeText={(text) =>
+                        handleTimeChange(day, 'close', text)
+                      }
+                      placeholder="21:00"
+                      keyboardType="numbers-and-punctuation"
+                      maxLength={5}
+                    />
+                  </>
+                ) : (
+                  <Text style={styles.closedText}>Closed</Text>
+                )}
               </>
             ) : (
               <Text
@@ -88,7 +135,9 @@ export function OperatingHours({ hours, onUpdate, editable = false }) {
                   adjustedDay === index && styles.todayText,
                 ]}
               >
-                {`${hours[day].open} - ${hours[day].close}`}
+                {hours[day].isClosed
+                  ? 'Closed'
+                  : `${hours[day].open} - ${hours[day].close}`}
               </Text>
             )}
           </View>
@@ -139,5 +188,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.1)',
     borderRadius: 4,
+  },
+  invalidTime: {
+    borderColor: Colors.error.main,
+  },
+  closedText: {
+    fontSize: 16,
+    color: Colors.error.main,
+    fontStyle: 'italic',
   },
 });
