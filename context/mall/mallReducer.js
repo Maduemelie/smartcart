@@ -8,45 +8,18 @@ export function mallReducer(state, action) {
         malls: action.payload.malls || [],
         priceHistory: action.payload.priceHistory || [],
         favorites: action.payload.favorites || [],
-        lastVisited: action.payload.lastVisited || null,
+        lastVisited: action.payload.lastVisited || [],
         listsByMall: action.payload.listsByMall || {},
         mallStats: action.payload.mallStats || {},
       };
 
     case MALL_ACTIONS.ADD_MALL:
-      // Only add if mall doesn't exist
-      const mallExists = state.malls.some(
-        (mall) => mall.name.toLowerCase() === action.payload.name.toLowerCase()
-      );
-
-      if (mallExists) {
-        return {
-          ...state,
-          malls: state.malls.map((mall) =>
-            mall.name.toLowerCase() === action.payload.name.toLowerCase()
-              ? { ...mall, lastVisited: new Date().toISOString() }
-              : mall
-          ),
-        };
-      }
-
-      const newMall = {
-        id: Date.now().toString(),
-        ...action.payload,
-        createdAt: new Date().toISOString(),
-        lastVisited: new Date().toISOString(),
-      };
-
       return {
         ...state,
-        malls: [...state.malls, newMall],
-        listsByMall: {
-          ...state.listsByMall,
-          [newMall.id]: [],
-        },
+        malls: [...state.malls, action.payload],
         mallStats: {
           ...state.mallStats,
-          [newMall.id]: {
+          [action.payload.id]: {
             totalLists: 0,
             totalPriceUpdates: 0,
             averagePrices: {},
@@ -60,11 +33,7 @@ export function mallReducer(state, action) {
         ...state,
         malls: state.malls.map((mall) =>
           mall.id === action.payload.mallId
-            ? {
-                ...mall,
-                ...action.payload.updates,
-                updatedAt: new Date().toISOString(),
-              }
+            ? { ...mall, ...action.payload.mall }
             : mall
         ),
       };
@@ -86,139 +55,32 @@ export function mallReducer(state, action) {
         mallStats: remainingStats,
       };
 
-    case MALL_ACTIONS.ADD_STORE:
-      const { mallId, store } = action.payload;
-      return {
-        ...state,
-        malls: state.malls.map((mall) =>
-          mall.id === mallId
-            ? {
-                ...mall,
-                stores: [
-                  ...(mall.stores || []),
-                  { ...store, id: Date.now().toString() },
-                ],
-                updatedAt: new Date().toISOString(),
-              }
-            : mall
-        ),
-      };
-
-    case MALL_ACTIONS.UPDATE_STORE:
-      const { mallId: updateMallId, storeId, updates } = action.payload;
-      return {
-        ...state,
-        malls: state.malls.map((mall) =>
-          mall.id === updateMallId
-            ? {
-                ...mall,
-                stores: mall.stores.map((store) =>
-                  store.id === storeId
-                    ? {
-                        ...store,
-                        ...updates,
-                        updatedAt: new Date().toISOString(),
-                      }
-                    : store
-                ),
-                updatedAt: new Date().toISOString(),
-              }
-            : mall
-        ),
-      };
-
-    case MALL_ACTIONS.DELETE_STORE:
-      const { mallId: deleteMallId, storeId: deleteStoreId } = action.payload;
-      return {
-        ...state,
-        malls: state.malls.map((mall) =>
-          mall.id === deleteMallId
-            ? {
-                ...mall,
-                stores: mall.stores.filter(
-                  (store) => store.id !== deleteStoreId
-                ),
-                updatedAt: new Date().toISOString(),
-              }
-            : mall
-        ),
-      };
-
     case MALL_ACTIONS.ADD_PRICE_RECORD:
-      const record = {
-        id: Date.now().toString(),
-        mallId: action.payload.mallId,
-        storeId: action.payload.storeId,
-        itemId: action.payload.itemId,
-        itemName: action.payload.itemName,
-        price: action.payload.price,
-        date: new Date().toISOString(),
-      };
-
-      // Update mall stats with new price
-      const currentStats = state.mallStats[action.payload.mallId] || {
-        totalLists: 0,
-        totalPriceUpdates: 0,
-        averagePrices: {},
-        storeStats: {},
-        lastUpdate: new Date().toISOString(),
-      };
-
-      // Update store-specific price history
-      const storeStats = currentStats.storeStats[action.payload.storeId] || {
+      const { mallId, itemId, itemName, price } = action.payload;
+      const currentStats = state.mallStats[mallId] || {
         totalPriceUpdates: 0,
         averagePrices: {},
       };
-
-      const storePrices =
-        storeStats.averagePrices[action.payload.itemName] || [];
-      const newStorePrices = [...storePrices, action.payload.price].slice(-5);
-
-      const currentPrices =
-        currentStats.averagePrices[action.payload.itemName] || [];
-      const newAveragePrices = {
-        ...currentStats.averagePrices,
-        [action.payload.itemName]: [
-          ...currentPrices,
-          action.payload.price,
-        ].slice(-5),
-      };
+      const currentPrices = currentStats.averagePrices[itemName] || [];
+      const newPrices = [...currentPrices, price];
 
       return {
         ...state,
-        priceHistory: [...state.priceHistory, record],
-        malls: state.malls.map((mall) =>
-          mall.id === action.payload.mallId
-            ? {
-                ...mall,
-                lastVisited: new Date().toISOString(),
-                stores: mall.stores.map((store) =>
-                  store.id === action.payload.storeId
-                    ? {
-                        ...store,
-                        lastPriceUpdate: new Date().toISOString(),
-                      }
-                    : store
-                ),
-              }
-            : mall
-        ),
+        priceHistory: [
+          ...state.priceHistory,
+          {
+            ...action.payload,
+            date: new Date().toISOString(),
+          },
+        ],
         mallStats: {
           ...state.mallStats,
-          [action.payload.mallId]: {
+          [mallId]: {
             ...currentStats,
             totalPriceUpdates: currentStats.totalPriceUpdates + 1,
-            averagePrices: newAveragePrices,
-            storeStats: {
-              ...currentStats.storeStats,
-              [action.payload.storeId]: {
-                ...storeStats,
-                totalPriceUpdates: storeStats.totalPriceUpdates + 1,
-                averagePrices: {
-                  ...storeStats.averagePrices,
-                  [action.payload.itemName]: newStorePrices,
-                },
-              },
+            averagePrices: {
+              ...currentStats.averagePrices,
+              [itemName]: newPrices,
             },
             lastUpdate: new Date().toISOString(),
           },
@@ -302,7 +164,7 @@ export function mallReducer(state, action) {
         listsByMall: {
           ...state.listsByMall,
           [action.payload.mallId]: mallLists.filter(
-            (id) => id !== action.payload.listId
+            (listId) => listId !== action.payload.listId
           ),
         },
         mallStats: {

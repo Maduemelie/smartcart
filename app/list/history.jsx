@@ -16,9 +16,11 @@ export default function History() {
       <Text style={[styles.date, { color: colors.text.secondary }]}>
         {new Date(item.purchaseDate).toLocaleDateString()}
       </Text>
-      <Text style={[styles.store, { color: colors.text.primary }]}>
-        {item.storeName || 'Store not specified'}
-      </Text>
+      {item.mallId && (
+        <Text style={[styles.store, { color: colors.text.primary }]}>
+          {item.storeName || 'Store not specified'}
+        </Text>
+      )}
 
       <View style={styles.itemsList}>
         {item.items.map((purchasedItem) => (
@@ -88,21 +90,21 @@ const styles = StyleSheet.create({
     marginBottom: 16,
     elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   listName: {
     fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 8,
+    fontWeight: '600',
+    marginBottom: 4,
   },
   date: {
     fontSize: 14,
-    marginBottom: 4,
+    marginBottom: 8,
   },
   store: {
-    fontSize: 16,
+    fontSize: 14,
     marginBottom: 12,
   },
   itemsList: {

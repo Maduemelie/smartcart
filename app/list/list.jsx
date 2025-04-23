@@ -11,14 +11,13 @@ import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '../../hooks/useColorScheme';
 import { useList } from '../../context/list/ListContext';
-import { deleteList } from '../../context/actions';
 import { useState } from 'react';
 
 function ListItem({ list, onDelete }) {
   const { colors } = useColorScheme();
-  const itemCount = list.items?.length || 0;
   // Show only first 3 items
   const previewItems = list.items?.slice(0, 3) || [];
+  const itemCount = list.items?.length || 0;
   const remainingItems = itemCount - 3;
 
   return (
@@ -30,7 +29,7 @@ function ListItem({ list, onDelete }) {
         <Text style={[styles.listName, { color: colors.text.primary }]}>
           {list.name}
         </Text>
-        <Text style={[styles.dateText, { color: colors.text.secondary }]}>
+        <Text style={[styles.listMeta, { color: colors.text.secondary }]}>
           {new Date(list.dateCreated).toLocaleDateString()}
         </Text>
 
@@ -64,7 +63,7 @@ function ListItem({ list, onDelete }) {
 
 export default function List() {
   const { colors } = useColorScheme();
-  const { state, dispatch } = useList();
+  const { state, deleteList } = useList();
   const hasLists = state.lists && state.lists.length > 0;
   const [numColumns] = useState(2); // Add state for columns
 
@@ -75,7 +74,7 @@ export default function List() {
         text: 'Delete',
         style: 'destructive',
         onPress: () => {
-          dispatch(deleteList(listId));
+          deleteList(listId);
         },
       },
     ]);
@@ -95,7 +94,6 @@ export default function List() {
           headerShadowVisible: false,
           headerStyle: { backgroundColor: colors.background },
           headerTintColor: colors.text.primary,
-
           headerRight: hasLists
             ? () => (
                 <Pressable onPress={handleCreateList} style={styles.addButton}>
@@ -211,6 +209,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 8,
   },
+  gridContent: {
+    padding: 8,
+  },
   listItem: {
     width: '48%', // Changed from flex to fixed width percentage
     borderRadius: 8,
@@ -244,10 +245,6 @@ const styles = StyleSheet.create({
     right: 8,
     top: 8,
     padding: 8,
-  },
-  gridContent: {
-    padding: 8,
-    paddingBottom: 16,
   },
   dateText: {
     fontSize: 12,

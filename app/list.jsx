@@ -5,7 +5,6 @@ import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
 import { useColorScheme } from '../hooks/useColorScheme';
 import { useList } from '../context/list/ListContext';
-import { deleteList } from '../context/actions';
 import { useState, useCallback, memo, useEffect } from 'react';
 import { ErrorBoundary } from '../components/ErrorBoundary';
 import { LoadingSpinner } from '../components/LoadingSpinner';
@@ -67,7 +66,7 @@ const ListItem = memo(({ list, onDelete }) => {
 
 export default function List() {
   const { colors } = useColorScheme();
-  const { state, dispatch } = useList();
+  const { state, deleteList } = useList();
   const [isLoading, setIsLoading] = useState(true);
   const hasLists = state.lists && state.lists.length > 0;
 
@@ -85,24 +84,17 @@ export default function List() {
           text: 'Delete',
           style: 'destructive',
           onPress: () => {
-            dispatch(deleteList(listId));
+            deleteList(listId);
           },
         },
       ]);
     },
-    [dispatch]
+    [deleteList]
   );
 
   const handleCreateList = useCallback(() => {
     router.push('/list/newList');
   }, []);
-
-  const renderItem = useCallback(
-    ({ item }) => {
-      return <ListItem list={item} onDelete={handleDeleteList} />;
-    },
-    [handleDeleteList]
-  );
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -158,31 +150,11 @@ export default function List() {
           </View>
         ) : (
           <View style={{ flex: 1 }}>
-            <Pressable
-              style={[
-                styles.createNewButton,
-                { backgroundColor: colors.primary },
-              ]}
-              onPress={handleCreateList}
-            >
-              <Ionicons
-                name="add-circle-outline"
-                size={24}
-                color={colors.text.inverse}
-              />
-              <Text
-                style={[
-                  styles.createNewButtonText,
-                  { color: colors.text.inverse },
-                ]}
-              >
-                Create New List
-              </Text>
-            </Pressable>
-
             <FlashList
               data={state.lists}
-              renderItem={renderItem}
+              renderItem={({ item }) => (
+                <ListItem list={item} onDelete={handleDeleteList} />
+              )}
               estimatedItemSize={200}
               keyExtractor={(item) => item.id}
               contentContainerStyle={{

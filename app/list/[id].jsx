@@ -21,8 +21,8 @@ import {
 } from '../../context/actions';
 import { Colors } from '../../constants/Colors';
 
-// Move StoreSection outside the main component to prevent re-renders
-const StoreSection = ({ storeName, onStoreNameChange, colors }) => (
+// Simplified store section that treats store and mall as the same
+const StoreSection = ({ selectedMall, colors }) => (
   <View style={[styles.storeSection, { backgroundColor: colors.surface }]}>
     <View style={styles.storeTitleRow}>
       <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
@@ -30,27 +30,28 @@ const StoreSection = ({ storeName, onStoreNameChange, colors }) => (
       </Text>
     </View>
 
-    <View style={styles.storeInputContainer}>
-      <Ionicons
-        name="storefront-outline"
-        size={20}
-        color={colors.text.secondary}
-      />
-      <TextInput
-        style={[
-          styles.storeInput,
-          {
-            backgroundColor: colors.surface,
-            color: colors.text.primary,
-            borderColor: colors.text.secondary,
-          },
-        ]}
-        value={storeName}
-        onChangeText={onStoreNameChange}
-        placeholder="Enter store name"
-        placeholderTextColor={colors.text.secondary}
-      />
-    </View>
+    {selectedMall ? (
+      <View style={styles.storeDisplay}>
+        <Ionicons
+          name="storefront-outline"
+          size={20}
+          color={colors.text.secondary}
+        />
+        <Text style={[styles.storeText, { color: colors.text.primary }]}>
+          {selectedMall.name}
+        </Text>
+      </View>
+    ) : (
+      <Pressable
+        style={[styles.selectMallButton, { borderColor: colors.primary }]}
+        onPress={() => router.push('/malls')}
+      >
+        <Ionicons name="add-circle-outline" size={20} color={colors.primary} />
+        <Text style={[styles.selectMallText, { color: colors.primary }]}>
+          Select or Add Mall
+        </Text>
+      </Pressable>
+    )}
   </View>
 );
 
@@ -132,13 +133,7 @@ const MallSelector = ({ selectedMall, onMallSelect, colors }) => {
 export default function ListDetail() {
   const { id } = useLocalSearchParams();
   const { colors } = useColorScheme();
-  const {
-    state: listState,
-    updateList,
-    updateItem,
-    deleteList,
-    addPurchaseToHistory,
-  } = useList();
+  const { state: listState, updateList, addPurchaseToHistory } = useList();
   const { state: mallState, dispatch: mallDispatch } = useMall();
 
   const list = listState.lists.find((list) => list.id === id);
@@ -160,7 +155,6 @@ export default function ListDetail() {
       {}
     ) || {}
   );
-  const [storeName, setStoreName] = useState(list?.storeName || '');
   const [selectedMall, setSelectedMall] = useState(
     list?.mallId ? mallState.malls.find((m) => m.id === list.mallId) : null
   );
@@ -182,11 +176,6 @@ export default function ListDetail() {
     setHasChanges(true);
   };
 
-  const handleStoreNameChange = (value) => {
-    setStoreName(value);
-    setHasChanges(true);
-  };
-
   const handleMallSelect = (mall) => {
     setSelectedMall(mall);
     setHasChanges(true);
@@ -196,9 +185,9 @@ export default function ListDetail() {
     if (!selectedMall) {
       Alert.alert(
         'Warning',
-        'No mall selected. Selecting a mall helps track prices and find the best deals.',
+        'No store selected. Selecting a store helps track prices and find the best deals.',
         [
-          { text: 'Select Mall', style: 'cancel' },
+          { text: 'Select Store', style: 'cancel' },
           { text: 'Save Anyway', onPress: () => saveChanges() },
         ]
       );
@@ -406,11 +395,7 @@ export default function ListDetail() {
           colors={colors}
         />
 
-        <StoreSection
-          storeName={storeName}
-          onStoreNameChange={handleStoreNameChange}
-          colors={colors}
-        />
+        <StoreSection selectedMall={selectedMall} colors={colors} />
       </ScrollView>
 
       {hasChanges && (
@@ -655,5 +640,19 @@ const styles = StyleSheet.create({
   },
   mallLocation: {
     fontSize: 14,
+  },
+  selectMallButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    gap: 8,
+  },
+  selectMallText: {
+    fontSize: 16,
+    fontWeight: '500',
   },
 });

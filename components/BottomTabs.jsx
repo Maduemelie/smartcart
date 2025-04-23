@@ -8,6 +8,7 @@ const tabs = [
   { name: '/', icon: 'home', label: 'Home' },
   { name: '/compare', icon: 'git-compare', label: 'Compare' },
   { name: '/list', icon: 'list', label: 'List' },
+  { name: '/malls', icon: 'storefront', label: 'Malls' },
   { name: '/profile', icon: 'person', label: 'Profile' },
 ];
 

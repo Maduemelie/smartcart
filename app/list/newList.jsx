@@ -38,7 +38,7 @@ export default function NewList() {
   const [step, setStep] = useState(1);
   const [listName, setListName] = useState('');
   const [items, setItems] = useState([]);
-  const [selectedMall, setSelectedMall] = useState(null);
+  const [selectedStore, setSelectedStore] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
 
   // Get frequently bought items from purchase history
@@ -89,7 +89,7 @@ export default function NewList() {
       id: Date.now().toString(),
       name: listName.trim(),
       items,
-      mallId: selectedMall?.id,
+      mallId: selectedStore?.id,
       dateCreated: new Date().toISOString(),
       status: 'NEW',
     };
@@ -299,45 +299,45 @@ export default function NewList() {
             )}
           </View>
         ) : (
-          // Step 2: Mall Selection and Finalization
+          // Step 2: Store Selection and Finalization
           <View>
             <Text style={[styles.title, { color: colors.text.primary }]}>
-              Choose a Mall (Optional)
+              Choose a Store (Optional)
             </Text>
 
             <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
-              Selecting a mall helps track prices and find the best deals
+              Selecting a store helps track prices and find the best deals
             </Text>
 
             <View style={styles.mallList}>
-              {mallState.malls.map((mall) => (
+              {mallState.malls.map((store) => (
                 <Pressable
-                  key={mall.id}
+                  key={store.id}
                   style={[
                     styles.mallItem,
                     { backgroundColor: colors.surface },
-                    selectedMall?.id === mall.id && styles.selectedMall,
+                    selectedStore?.id === store.id && styles.selectedMall,
                   ]}
-                  onPress={() => setSelectedMall(mall)}
+                  onPress={() => setSelectedStore(store)}
                 >
                   <View style={styles.mallInfo}>
                     <Text
                       style={[styles.mallName, { color: colors.text.primary }]}
                     >
-                      {mall.name}
+                      {store.name}
                     </Text>
-                    {mall.location && (
+                    {store.location && (
                       <Text
                         style={[
                           styles.mallLocation,
                           { color: colors.text.secondary },
                         ]}
                       >
-                        {mall.location}
+                        {store.location}
                       </Text>
                     )}
                   </View>
-                  {selectedMall?.id === mall.id && (
+                  {selectedStore?.id === store.id && (
                     <Ionicons
                       name="checkmark-circle"
                       size={24}

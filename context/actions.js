@@ -2,19 +2,33 @@
 export const LIST_ACTIONS = {
   INITIALIZE_DATA: 'INITIALIZE_LIST_DATA',
   CREATE_LIST: 'CREATE_LIST',
+  DELETE_LIST: 'DELETE_LIST',
+  UPDATE_LIST: 'UPDATE_LIST',
   ADD_ITEM: 'ADD_ITEM',
   UPDATE_ITEM: 'UPDATE_ITEM',
   REMOVE_ITEM: 'REMOVE_ITEM',
-  DELETE_LIST: 'DELETE_LIST',
-  UPDATE_LIST: 'UPDATE_LIST',
   ADD_TO_HISTORY: 'ADD_TO_HISTORY',
-  UPDATE_HISTORY: 'UPDATE_HISTORY',
   LOAD_HISTORY: 'LOAD_HISTORY',
 };
 
-export const initializeListData = (lists) => ({
+// Mall Actions
+export const MALL_ACTIONS = {
+  INITIALIZE_DATA: 'INITIALIZE_MALL_DATA',
+  ADD_MALL: 'ADD_MALL',
+  UPDATE_MALL: 'UPDATE_MALL',
+  DELETE_MALL: 'DELETE_MALL',
+  ADD_PRICE_RECORD: 'ADD_PRICE_RECORD',
+  SET_FAVORITE: 'SET_FAVORITE',
+  UPDATE_MALL_STATS: 'UPDATE_MALL_STATS',
+  UPDATE_LAST_VISITED: 'UPDATE_LAST_VISITED',
+  ADD_LIST_TO_MALL: 'ADD_LIST_TO_MALL',
+  REMOVE_LIST_FROM_MALL: 'REMOVE_LIST_FROM_MALL',
+};
+
+// List Action Creators
+export const initializeListData = (data) => ({
   type: LIST_ACTIONS.INITIALIZE_DATA,
-  payload: lists,
+  payload: data,
 });
 
 export const createList = (list) => ({
@@ -22,9 +36,9 @@ export const createList = (list) => ({
   payload: list,
 });
 
-export const addItem = (listId, item) => ({
-  type: LIST_ACTIONS.ADD_ITEM,
-  payload: { listId, item },
+export const updateList = (listId, updatedList) => ({
+  type: LIST_ACTIONS.UPDATE_LIST,
+  payload: { listId, updatedList },
 });
 
 export const deleteList = (listId) => ({
@@ -32,9 +46,9 @@ export const deleteList = (listId) => ({
   payload: { listId },
 });
 
-export const updateList = (listId, updatedList) => ({
-  type: LIST_ACTIONS.UPDATE_LIST,
-  payload: { listId, updatedList },
+export const addItem = (listId, item) => ({
+  type: LIST_ACTIONS.ADD_ITEM,
+  payload: { listId, item },
 });
 
 export const updateItem = (listId, itemId, item) => ({
@@ -57,26 +71,10 @@ export const loadHistory = (history) => ({
   payload: history,
 });
 
-// Mall Actions
-export const MALL_ACTIONS = {
-  INITIALIZE_DATA: 'INITIALIZE_MALL_DATA',
-  ADD_MALL: 'ADD_MALL',
-  UPDATE_MALL: 'UPDATE_MALL',
-  DELETE_MALL: 'DELETE_MALL',
-  ADD_PRICE_RECORD: 'ADD_PRICE_RECORD',
-  SET_FAVORITE: 'SET_FAVORITE',
-  UPDATE_MALL_STATS: 'UPDATE_MALL_STATS',
-  UPDATE_LAST_VISITED: 'UPDATE_LAST_VISITED',
-  ADD_LIST_TO_MALL: 'ADD_LIST_TO_MALL',
-  REMOVE_LIST_FROM_MALL: 'REMOVE_LIST_FROM_MALL',
-  ADD_STORE: 'ADD_STORE',
-  UPDATE_STORE: 'UPDATE_STORE',
-  DELETE_STORE: 'DELETE_STORE',
-};
-
-export const initializeMallData = (malls) => ({
+// Mall Action Creators
+export const initializeMallData = (data) => ({
   type: MALL_ACTIONS.INITIALIZE_DATA,
-  payload: malls,
+  payload: data,
 });
 
 export const addMall = (mall) => ({
@@ -122,21 +120,6 @@ export const addListToMall = (mallId, listId) => ({
 export const removeListFromMall = (mallId, listId) => ({
   type: MALL_ACTIONS.REMOVE_LIST_FROM_MALL,
   payload: { mallId, listId },
-});
-
-export const addStore = (mallId, store) => ({
-  type: MALL_ACTIONS.ADD_STORE,
-  payload: { mallId, store },
-});
-
-export const updateStore = (mallId, storeId, updates) => ({
-  type: MALL_ACTIONS.UPDATE_STORE,
-  payload: { mallId, storeId, updates },
-});
-
-export const deleteStore = (mallId, storeId) => ({
-  type: MALL_ACTIONS.DELETE_STORE,
-  payload: { mallId, storeId },
 });
 
 // Price Actions
