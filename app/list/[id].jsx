@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import {
   View,
   Text,
@@ -14,7 +14,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '../../hooks/useColorScheme';
 import { useList } from '../../context/list/ListContext';
 import { useMall } from '../../context/mall/MallContext';
-import { addPriceRecord, addMall } from '../../context/actions';
+import {
+  addPriceRecord,
+  addMall,
+  updateLastVisited,
+} from '../../context/actions';
+import { Colors } from '../../constants/Colors';
 
 // Move StoreSection outside the main component to prevent re-renders
 const StoreSection = ({ storeName, onStoreNameChange, colors }) => (
@@ -49,6 +54,81 @@ const StoreSection = ({ storeName, onStoreNameChange, colors }) => (
   </View>
 );
 
+const MallSelector = ({ selectedMall, onMallSelect, colors }) => {
+  const { state: mallState } = useMall();
+  const [showAll, setShowAll] = useState(false);
+
+  const sortedMalls = useMemo(() => {
+    return mallState.malls.sort((a, b) => {
+      const aIsFavorite = mallState.favorites.includes(a.id);
+      const bIsFavorite = mallState.favorites.includes(b.id);
+      if (aIsFavorite !== bIsFavorite) return bIsFavorite ? 1 : -1;
+      return (b.lastVisited || '').localeCompare(a.lastVisited || '');
+    });
+  }, [mallState.malls, mallState.favorites]);
+
+  const displayMalls = showAll ? sortedMalls : sortedMalls.slice(0, 3);
+
+  return (
+    <View style={[styles.mallSection, { backgroundColor: colors.surface }]}>
+      <View style={styles.mallSectionHeader}>
+        <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+          Select Mall
+        </Text>
+        {sortedMalls.length > 3 && (
+          <Pressable onPress={() => setShowAll(!showAll)}>
+            <Text style={[styles.showAllButton, { color: colors.primary }]}>
+              {showAll ? 'Show Less' : 'Show All'}
+            </Text>
+          </Pressable>
+        )}
+      </View>
+
+      <View style={styles.mallList}>
+        {displayMalls.map((mall) => (
+          <Pressable
+            key={mall.id}
+            style={[
+              styles.mallItem,
+              selectedMall?.id === mall.id && {
+                backgroundColor: colors.primary + '20',
+                borderColor: colors.primary,
+              },
+            ]}
+            onPress={() => onMallSelect(mall)}
+          >
+            <View style={styles.mallInfo}>
+              <Text style={[styles.mallName, { color: colors.text.primary }]}>
+                {mall.name}
+              </Text>
+              {mall.location && (
+                <Text
+                  style={[
+                    styles.mallLocation,
+                    { color: colors.text.secondary },
+                  ]}
+                >
+                  {mall.location}
+                </Text>
+              )}
+            </View>
+            {mallState.favorites.includes(mall.id) && (
+              <Ionicons name="star" size={16} color={colors.primary} />
+            )}
+            {selectedMall?.id === mall.id && (
+              <Ionicons
+                name="checkmark-circle"
+                size={20}
+                color={colors.primary}
+              />
+            )}
+          </Pressable>
+        ))}
+      </View>
+    </View>
+  );
+};
+
 export default function ListDetail() {
   const { id } = useLocalSearchParams();
   const { colors } = useColorScheme();
@@ -59,9 +139,8 @@ export default function ListDetail() {
     deleteList,
     addPurchaseToHistory,
   } = useList();
-  const { dispatch: mallDispatch } = useMall();
+  const { state: mallState, dispatch: mallDispatch } = useMall();
 
-  // Get list and initialize state from existing data
   const list = listState.lists.find((list) => list.id === id);
   const [purchasedItems, setPurchasedItems] = useState(
     list?.items.reduce(
@@ -82,9 +161,11 @@ export default function ListDetail() {
     ) || {}
   );
   const [storeName, setStoreName] = useState(list?.storeName || '');
+  const [selectedMall, setSelectedMall] = useState(
+    list?.mallId ? mallState.malls.find((m) => m.id === list.mallId) : null
+  );
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Add handlers
   const handleTogglePurchased = (itemId) => {
     setPurchasedItems((prev) => ({
       ...prev,
@@ -106,72 +187,69 @@ export default function ListDetail() {
     setHasChanges(true);
   };
 
-  // Add new handlers for editing
-  const handleEditItem = (item) => {
+  const handleMallSelect = (mall) => {
+    setSelectedMall(mall);
     setHasChanges(true);
   };
 
-  // Modified update handler
-  const handleUpdateItem = (itemId, field, value) => {
-    const updatedItems = list.items.map((item) =>
-      item.id === itemId ? { ...item, [field]: value } : item
-    );
-
-    updateList(list.id, {
-      ...list,
-      items: updatedItems,
-    });
-    setHasChanges(true);
-  };
-
-  // Modified save handler
   const handleSaveChanges = () => {
+    if (!selectedMall) {
+      Alert.alert(
+        'Warning',
+        'No mall selected. Selecting a mall helps track prices and find the best deals.',
+        [
+          { text: 'Select Mall', style: 'cancel' },
+          { text: 'Save Anyway', onPress: () => saveChanges() },
+        ]
+      );
+      return;
+    }
+
+    saveChanges();
+  };
+
+  const saveChanges = () => {
     const purchasedItemsList = list.items
-      .filter((item) => purchasedItems[item.id] === true)
+      .filter((item) => purchasedItems[item.id])
       .map((item) => ({
         ...item,
         price: itemPrices[item.id] || '0',
         purchaseDate: new Date().toISOString(),
       }));
 
-    if (purchasedItemsList.length > 0) {
-      // Add purchase to shopping history
-      addPurchaseToHistory(list.id, purchasedItemsList, totalPrice, storeName);
-
-      // Update mall price history and statistics using action creators
+    if (purchasedItemsList.length > 0 && selectedMall) {
       purchasedItemsList.forEach((item) => {
-        mallDispatch(
-          addPriceRecord(storeName, item.id, Number(itemPrices[item.id]) || 0)
-        );
+        const price = Number(itemPrices[item.id]);
+        if (price > 0) {
+          mallDispatch(
+            addPriceRecord(selectedMall.id, item.id, item.name, price)
+          );
+        }
       });
 
-      // Update mall if it doesn't exist using action creator
-      mallDispatch(
-        addMall({
-          name: storeName,
-          lastVisited: new Date().toISOString(),
-        })
+      addPurchaseToHistory(
+        list.id,
+        purchasedItemsList,
+        totalPrice,
+        selectedMall.id
       );
     }
 
-    // Update original list
-    const updatedItems = list.items.map((item) => ({
-      ...item,
-      purchased: purchasedItems[item.id] || false,
-      price: itemPrices[item.id] || item.price,
-    }));
-
     updateList(list.id, {
       ...list,
-      items: updatedItems,
-      storeName,
+      items: list.items.map((item) => ({
+        ...item,
+        purchased: purchasedItems[item.id] || false,
+        price: itemPrices[item.id] || item.price,
+      })),
+      mallId: selectedMall?.id,
+      lastUpdated: new Date().toISOString(),
     });
 
     Alert.alert('Success', 'Changes saved successfully');
     router.back();
   };
 
-  // Calculate total
   const totalPrice = Object.values(itemPrices).reduce(
     (sum, price) => sum + (Number(price) || 0),
     0
@@ -209,7 +287,6 @@ export default function ListDetail() {
       />
 
       <ScrollView style={styles.content}>
-        {/* List Meta Info */}
         <View style={[styles.metaSection, { backgroundColor: colors.surface }]}>
           <Text style={[styles.dateText, { color: colors.text.secondary }]}>
             Created on {new Date(list.dateCreated).toLocaleDateString()}
@@ -225,13 +302,12 @@ export default function ListDetail() {
           </View>
         </View>
 
-        {/* Items List */}
         <View style={styles.itemsSection}>
           {list.items.map((item) => (
             <Pressable
               key={item.id}
               style={[styles.itemRow, { backgroundColor: colors.surface }]}
-              onPress={() => handleEditItem(item)}
+              onPress={() => setHasChanges(true)}
             >
               <Pressable
                 style={styles.checkbox}
@@ -253,7 +329,12 @@ export default function ListDetail() {
                   style={[styles.itemNameInput, { color: colors.text.primary }]}
                   value={item.name}
                   onChangeText={(value) =>
-                    handleUpdateItem(item.id, 'name', value)
+                    updateList(list.id, {
+                      ...list,
+                      items: list.items.map((i) =>
+                        i.id === item.id ? { ...i, name: value } : i
+                      ),
+                    })
                   }
                   placeholder="Item name"
                   onFocus={() => setHasChanges(true)}
@@ -266,7 +347,12 @@ export default function ListDetail() {
                     ]}
                     value={item.quantity}
                     onChangeText={(value) =>
-                      handleUpdateItem(item.id, 'quantity', value)
+                      updateList(list.id, {
+                        ...list,
+                        items: list.items.map((i) =>
+                          i.id === item.id ? { ...i, quantity: value } : i
+                        ),
+                      })
                     }
                     keyboardType="numeric"
                     onFocus={() => setHasChanges(true)}
@@ -275,14 +361,18 @@ export default function ListDetail() {
                     style={[styles.unitInput, { color: colors.text.primary }]}
                     value={item.unit}
                     onChangeText={(value) =>
-                      handleUpdateItem(item.id, 'unit', value)
+                      updateList(list.id, {
+                        ...list,
+                        items: list.items.map((i) =>
+                          i.id === item.id ? { ...i, unit: value } : i
+                        ),
+                      })
                     }
                     onFocus={() => setHasChanges(true)}
                   />
                 </View>
               </View>
 
-              {/* Price input stays the same */}
               {purchasedItems[item.id] && (
                 <View style={styles.priceInputContainer}>
                   <Text
@@ -310,7 +400,12 @@ export default function ListDetail() {
           ))}
         </View>
 
-        {/* Store Input Section */}
+        <MallSelector
+          selectedMall={selectedMall}
+          onMallSelect={handleMallSelect}
+          colors={colors}
+        />
+
         <StoreSection
           storeName={storeName}
           onStoreNameChange={handleStoreNameChange}
@@ -318,7 +413,6 @@ export default function ListDetail() {
         />
       </ScrollView>
 
-      {/* Conditional Footer */}
       {hasChanges && (
         <View style={styles.footer}>
           <Pressable
@@ -524,5 +618,42 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 8,
+  },
+  mallSection: {
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  mallSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  showAllButton: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  mallList: {
+    gap: 8,
+  },
+  mallItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
+  },
+  mallInfo: {
+    flex: 1,
+  },
+  mallName: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  mallLocation: {
+    fontSize: 14,
   },
 });

@@ -129,20 +129,41 @@ export default function MallDetail() {
 
           {/* Recent Price Updates */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Recent Price Updates</Text>
-            <View style={styles.card}>
+            <Text style={[styles.sectionTitle, { color: Colors.text.primary }]}>
+              Recent Price Updates
+            </Text>
+            <View style={[styles.card, { backgroundColor: Colors.surface }]}>
               {state.priceHistory
                 .filter((record) => record.mallId === id)
                 .slice(0, 5)
-                .map((record, index) => (
-                  <View key={index} style={styles.priceUpdateItem}>
-                    <Text style={styles.itemName}>Item Name</Text>
-                    <Text style={styles.priceText}>₦{record.price}</Text>
-                    <Text style={styles.updateDate}>
+                .map((record) => (
+                  <View key={record.id} style={styles.priceUpdateItem}>
+                    <Text
+                      style={[styles.itemName, { color: Colors.text.primary }]}
+                    >
+                      {record.itemName}
+                    </Text>
+                    <Text style={styles.priceText}>
+                      ₦{record.price.toLocaleString()}
+                    </Text>
+                    <Text
+                      style={[
+                        styles.updateDate,
+                        { color: Colors.text.secondary },
+                      ]}
+                    >
                       {new Date(record.date).toLocaleDateString()}
                     </Text>
                   </View>
                 ))}
+              {state.priceHistory.filter((record) => record.mallId === id)
+                .length === 0 && (
+                <Text
+                  style={[styles.emptyText, { color: Colors.text.secondary }]}
+                >
+                  No price updates yet
+                </Text>
+              )}
             </View>
           </View>
         </ScrollView>
@@ -235,5 +256,10 @@ const styles = StyleSheet.create({
   updateDate: {
     fontSize: 14,
     color: Colors.text.secondary,
+  },
+  emptyText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 8,
   },
 });

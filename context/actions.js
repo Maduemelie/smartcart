@@ -66,6 +66,9 @@ export const MALL_ACTIONS = {
   ADD_PRICE_RECORD: 'ADD_PRICE_RECORD',
   SET_FAVORITE: 'SET_FAVORITE',
   UPDATE_MALL_STATS: 'UPDATE_MALL_STATS',
+  UPDATE_LAST_VISITED: 'UPDATE_LAST_VISITED',
+  ADD_LIST_TO_MALL: 'ADD_LIST_TO_MALL',
+  REMOVE_LIST_FROM_MALL: 'REMOVE_LIST_FROM_MALL',
 };
 
 export const initializeMallData = (malls) => ({
@@ -88,14 +91,34 @@ export const deleteMall = (mallId) => ({
   payload: mallId,
 });
 
-export const addPriceRecord = (mallId, itemId, price) => ({
+export const addPriceRecord = (mallId, itemId, itemName, price) => ({
   type: MALL_ACTIONS.ADD_PRICE_RECORD,
-  payload: { mallId, itemId, price },
+  payload: { mallId, itemId, itemName, price },
 });
 
 export const setMallFavorite = (mallId, isFavorite) => ({
   type: MALL_ACTIONS.SET_FAVORITE,
   payload: { mallId, isFavorite },
+});
+
+export const updateMallStats = (mallId) => ({
+  type: MALL_ACTIONS.UPDATE_MALL_STATS,
+  payload: { mallId },
+});
+
+export const updateLastVisited = (mallId) => ({
+  type: MALL_ACTIONS.UPDATE_LAST_VISITED,
+  payload: { mallId },
+});
+
+export const addListToMall = (mallId, listId) => ({
+  type: MALL_ACTIONS.ADD_LIST_TO_MALL,
+  payload: { mallId, listId },
+});
+
+export const removeListFromMall = (mallId, listId) => ({
+  type: MALL_ACTIONS.REMOVE_LIST_FROM_MALL,
+  payload: { mallId, listId },
 });
 
 // Price Actions

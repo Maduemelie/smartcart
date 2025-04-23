@@ -5,9 +5,11 @@ import { loadPersistedState, persistState } from '../../utils/persistence';
 
 const initialState = {
   malls: [],
-  priceHistory: [], // Track item prices per mall
-  favorites: [], // User's preferred malls
+  priceHistory: [],
+  favorites: [],
   lastVisited: null,
+  listsByMall: {}, // Track lists associated with each mall
+  mallStats: {}, // Track statistics for each mall
 };
 
 export const MallContext = createContext();
@@ -36,17 +38,37 @@ export function MallProvider({ children }) {
 
   const saveStateToStorage = async () => {
     try {
-      await persistState('MALLS', state);
+      await persistState('MALLS', {
+        malls: state.malls,
+        priceHistory: state.priceHistory,
+        favorites: state.favorites,
+        lastVisited: state.lastVisited,
+        listsByMall: state.listsByMall,
+        mallStats: state.mallStats,
+      });
     } catch (error) {
       console.error('Error saving mall data:', error);
     }
   };
 
-  return (
-    <MallContext.Provider value={{ state, dispatch }}>
-      {children}
-    </MallContext.Provider>
-  );
+  const value = {
+    state,
+    dispatch,
+    stats: {
+      getTotalLists: (mallId) => state.mallStats[mallId]?.totalLists || 0,
+      getPriceUpdates: (mallId) =>
+        state.mallStats[mallId]?.totalPriceUpdates || 0,
+      getAveragePrice: (mallId, itemName) => {
+        const prices = state.mallStats[mallId]?.averagePrices[itemName] || [];
+        if (prices.length === 0) return null;
+        return prices.reduce((a, b) => a + b, 0) / prices.length;
+      },
+      getLastUpdate: (mallId) => state.mallStats[mallId]?.lastUpdate,
+      getMallLists: (mallId) => state.listsByMall[mallId] || [],
+    },
+  };
+
+  return <MallContext.Provider value={value}>{children}</MallContext.Provider>;
 }
 
 export const useMall = () => useContext(MallContext);

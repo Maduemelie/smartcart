@@ -1,3 +1,4 @@
+import { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -5,231 +6,122 @@ import {
   TextInput,
   Pressable,
   ScrollView,
-  Modal,
   Alert,
 } from 'react-native';
-import { useState } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../../constants/Colors';
 import { useColorScheme } from '../../hooks/useColorScheme';
 import { useList } from '../../context/list/ListContext';
-import { router } from 'expo-router';
-import { createStyles } from '../../styles/newList.styles';
+import { useMall } from '../../context/mall/MallContext';
 
-const UNITS = [
-  'kg',
-  'g',
-  'L',
-  'ml',
-  'pcs',
-  'pack',
-  'carton',
-  'dozen',
-  'bag',
-  'bottle',
-  'tin',
-  'sachet',
-  'bunch',
-  'tuber',
-  'basket',
-];
+// Common categories and items
+const QUICK_ADD_CATEGORIES = {
+  'Fruits & Vegetables': [
+    'Tomatoes',
+    'Onions',
+    'Potatoes',
+    'Bananas',
+    'Apples',
+  ],
+  'Dairy & Eggs': ['Milk', 'Eggs', 'Cheese', 'Yogurt'],
+  'Meat & Fish': ['Chicken', 'Beef', 'Fish'],
+  'Grains & Bread': ['Rice', 'Bread', 'Pasta'],
+  Beverages: ['Water', 'Juice', 'Soft Drinks'],
+};
 
 export default function NewList() {
   const { colors } = useColorScheme();
-  const styles = createStyles(colors);
-  const { createList } = useList(); // Update to get createList from context
-
-  // List level state
+  const { createList, state: listState } = useList();
+  const { state: mallState } = useMall();
+  const [step, setStep] = useState(1);
   const [listName, setListName] = useState('');
-
-  // Current item states
-  const [currentItem, setCurrentItem] = useState({
-    name: '',
-    quantity: '',
-    unit: 'kg',
-  });
-
-  // Array to store all items
   const [items, setItems] = useState([]);
+  const [selectedMall, setSelectedMall] = useState(null);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  // Existing unit picker states
-  const [showUnitPicker, setShowUnitPicker] = useState(false);
+  // Get frequently bought items from purchase history
+  const frequentItems = useMemo(() => {
+    const itemCounts = {};
+    listState.purchaseHistory.forEach((purchase) => {
+      purchase.items.forEach((item) => {
+        itemCounts[item.name] = (itemCounts[item.name] || 0) + 1;
+      });
+    });
+    return Object.entries(itemCounts)
+      .sort(([, a], [, b]) => b - a)
+      .slice(0, 5)
+      .map(([name]) => name);
+  }, [listState.purchaseHistory]);
 
-  const [errors, setErrors] = useState({
-    listName: '',
-    itemName: '',
-    quantity: '',
-  });
+  const handleQuickAdd = (itemName) => {
+    if (items.some((item) => item.name === itemName)) return;
 
-  const [editingItem, setEditingItem] = useState(null);
-
-  const validateListName = (name) => {
-    if (!name.trim()) {
-      setErrors((prev) => ({ ...prev, listName: 'List name is required' }));
-      return false;
-    }
-    setErrors((prev) => ({ ...prev, listName: '' }));
-    return true;
-  };
-
-  const validateItem = (item) => {
-    let isValid = true;
-    const newErrors = { ...errors };
-
-    // Validate item name
-    if (!item.name.trim()) {
-      newErrors.itemName = 'Item name is required';
-      isValid = false;
-    }
-
-    // Validate quantity
-    if (!item.quantity) {
-      newErrors.quantity = 'Quantity is required';
-      isValid = false;
-    } else if (isNaN(item.quantity) || Number(item.quantity) <= 0) {
-      newErrors.quantity = 'Invalid quantity';
-      isValid = false;
-    }
-
-    setErrors(newErrors);
-    return isValid;
-  };
-
-  // Update input handlers
-  const handleItemChange = (field, value) => {
-    setCurrentItem((prev) => ({
+    setItems((prev) => [
       ...prev,
-      [field]: value,
-    }));
-  };
-
-  const handleEditItem = (item) => {
-    setEditingItem(item);
-    setCurrentItem({
-      name: item.name,
-      quantity: item.quantity,
-      unit: item.unit,
-      id: item.id,
-    });
-  };
-
-  const handleUpdateItem = () => {
-    if (!validateItem(currentItem)) return;
-
-    setItems((prev) =>
-      prev.map((item) =>
-        item.id === currentItem.id ? { ...currentItem } : item
-      )
-    );
-
-    setCurrentItem({
-      name: '',
-      quantity: '',
-      unit: 'kg',
-    });
-    setEditingItem(null);
-    setErrors({
-      listName: '',
-      itemName: '',
-      quantity: '',
-    });
-  };
-
-  const handleDeleteItem = (itemId) => {
-    Alert.alert('Delete Item', 'Are you sure you want to remove this item?', [
       {
-        text: 'Cancel',
-        style: 'cancel',
-      },
-      {
-        text: 'Delete',
-        onPress: () => {
-          setItems((prev) => prev.filter((item) => item.id !== itemId));
-        },
-        style: 'destructive',
+        id: Date.now().toString(),
+        name: itemName,
+        quantity: '1',
+        unit: 'pcs',
+        purchased: false,
       },
     ]);
   };
 
-  // Add item to list
-  const handleAddItem = () => {
-    if (!validateItem(currentItem)) return;
-
-    if (currentItem.name.trim()) {
-      if (editingItem) {
-        handleUpdateItem();
-      } else {
-        setItems((prev) => [
-          ...prev,
-          { ...currentItem, id: Date.now().toString() },
-        ]);
-        setCurrentItem({
-          name: '',
-          quantity: '',
-          unit: 'kg',
-        });
-        setErrors({
-          listName: '',
-          itemName: '',
-          quantity: '',
-        });
-      }
-    }
+  const handleRemoveItem = (itemId) => {
+    setItems((prev) => prev.filter((item) => item.id !== itemId));
   };
 
-  /**
-   * Handles saving a new list
-   * @function
-   * @param {string} listName - The name of the list
-   * @param {Array} items - The items to add to the list
-   * @returns {void}
-   */
-  const handleSaveList = () => {
-    console.log('Saving list...', listName, items);
-    // Validate list name
-    if (!validateListName(listName)) return;
+  const handleCreateList = () => {
+    if (!listName.trim()) {
+      Alert.alert('Error', 'Please enter a list name');
+      return;
+    }
 
-    if (!items || items.length === 0) {
+    if (items.length === 0) {
       Alert.alert('Error', 'Add at least one item to the list');
       return;
     }
-    console.log('Saving list...', listName, items);
-    // Format items properly
-    const formattedItems = items?.map((item) => ({
-      id: item.id || Date.now().toString(),
-      name: item.name,
-      quantity: item.quantity,
-      unit: item.unit,
-      purchased: false,
-      price: '',
-    }));
-    console.log('Formatted items:', formattedItems);
-    // Create new list object with proper structure
+
     const newList = {
       id: Date.now().toString(),
       name: listName.trim(),
-      items: formattedItems,
+      items,
+      mallId: selectedMall?.id,
       dateCreated: new Date().toISOString(),
-      lastUpdated: new Date().toISOString(),
       status: 'NEW',
     };
-    console.log('New list:', newList);
 
-    try {
-      createList(newList);
-      Alert.alert('Success', 'Shopping list created successfully!', [
-        {
-          text: 'OK',
-          onPress: () => router.back(),
-        },
-      ]);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to create shopping list');
-      console.error('Error creating list:', error);
-    }
+    createList(newList);
+    Alert.alert('Success', 'Shopping list created!', [
+      { text: 'OK', onPress: () => router.back() },
+    ]);
   };
+
+  const filteredItems = useMemo(() => {
+    const query = searchQuery.toLowerCase();
+    const results = new Set();
+
+    // Search in categories
+    Object.entries(QUICK_ADD_CATEGORIES).forEach(([category, items]) => {
+      if (category.toLowerCase().includes(query)) {
+        items.forEach((item) => results.add(item));
+      } else {
+        items.forEach((item) => {
+          if (item.toLowerCase().includes(query)) results.add(item);
+        });
+      }
+    });
+
+    // Search in frequent items
+    frequentItems.forEach((item) => {
+      if (item.toLowerCase().includes(query)) results.add(item);
+    });
+
+    return Array.from(results);
+  }, [searchQuery, frequentItems]);
 
   return (
     <SafeAreaView
@@ -237,216 +129,390 @@ export default function NewList() {
     >
       <Stack.Screen
         options={{
-          title: 'Create New List',
+          title: 'Create Shopping List',
           headerShadowVisible: false,
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text.primary,
         }}
       />
 
       <ScrollView style={styles.content}>
-        {/* List Name Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>List Name</Text>
-          {/* List Name Input with Error */}
-          <View
-            style={{
-              marginBottom: errors.listName ? 24 : 16, // Moved from StyleSheet
-            }}
-          >
+        {step === 1 ? (
+          // Step 1: Name and Quick Add
+          <View>
+            <Text style={[styles.title, { color: colors.text.primary }]}>
+              Create a New Shopping List
+            </Text>
+
             <TextInput
-              style={[
-                styles.titleInput,
-                { backgroundColor: colors.surface, color: colors.text.primary },
-                errors.listName && { borderColor: colors.error.main },
-              ]}
+              style={[styles.nameInput, { backgroundColor: colors.surface }]}
               value={listName}
-              onChangeText={(text) => {
-                setListName(text);
-                if (errors.listName) validateListName(text);
-              }}
-              placeholder="Enter list name..."
+              onChangeText={setListName}
+              placeholder="Give your list a name..."
               placeholderTextColor={colors.text.secondary}
             />
-            {errors.listName ? (
-              <Text
-                style={{ color: colors.error.main, fontSize: 12, marginTop: 4 }}
-              >
-                {errors.listName}
-              </Text>
-            ) : null}
-          </View>
-        </View>
 
-        {/* Items Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Items</Text>
-
-          {/* Single Item Input Row */}
-          <View style={styles.itemInputRow}>
-            <View style={styles.itemNameContainer}>
+            <View style={styles.searchContainer}>
+              <Ionicons name="search" size={20} color={colors.text.secondary} />
               <TextInput
-                style={[
-                  styles.itemInput,
-                  {
-                    backgroundColor: colors.surface,
-                    color: colors.text.primary,
-                  },
-                ]}
-                value={currentItem.name}
-                onChangeText={(value) => handleItemChange('name', value)}
-                placeholder="Item name"
+                style={[styles.searchInput, { color: colors.text.primary }]}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                placeholder="Search items..."
                 placeholderTextColor={colors.text.secondary}
               />
             </View>
 
-            <View style={styles.quantityContainer}>
-              <TextInput
-                style={[
-                  styles.itemInput,
-                  styles.quantityInput,
-                  {
-                    backgroundColor: colors.surface,
-                    color: colors.text.primary,
-                  },
-                ]}
-                value={currentItem.quantity}
-                onChangeText={(value) => handleItemChange('quantity', value)}
-                placeholder="Qty"
-                keyboardType="numeric"
-                placeholderTextColor={colors.text.secondary}
-              />
-            </View>
-
-            <Pressable
-              style={[styles.unitButton, { backgroundColor: colors.surface }]}
-              onPress={() => setShowUnitPicker(true)}
-            >
-              <Text style={styles.unitButtonText}>{currentItem.unit}</Text>
-              <Ionicons
-                name="chevron-down"
-                size={16}
-                color={colors.text.secondary}
-              />
-            </Pressable>
-          </View>
-
-          {/* Display added items */}
-          {items.map((item) => (
-            <View
-              key={item.id}
-              style={[styles.itemRow, { backgroundColor: colors.surface }]}
-            >
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.itemText, { color: colors.text.primary }]}>
-                  {item.name}
-                </Text>
-                <Text
-                  style={[styles.itemText, { color: colors.text.secondary }]}
-                >
-                  {item.quantity} {item.unit}
-                </Text>
-              </View>
-              <View style={styles.itemActions}>
-                <Pressable
-                  onPress={() => handleEditItem(item)}
-                  style={({ pressed }) => [
-                    styles.actionButton,
-                    { opacity: pressed ? 0.7 : 1 },
-                  ]}
-                >
-                  <Ionicons name="pencil" size={18} color={colors.primary} />
-                </Pressable>
-                <Pressable
-                  onPress={() => handleDeleteItem(item.id)}
-                  style={({ pressed }) => [
-                    styles.actionButton,
-                    { opacity: pressed ? 0.7 : 1 },
-                  ]}
-                >
-                  <Ionicons name="trash" size={18} color={colors.error.main} />
-                </Pressable>
-              </View>
-            </View>
-          ))}
-
-          {/* Add Item Button */}
-          <Pressable
-            style={[styles.addItemButton, { backgroundColor: colors.primary }]}
-            onPress={handleAddItem}
-          >
-            <Ionicons
-              name={
-                editingItem ? 'checkmark-circle-outline' : 'add-circle-outline'
-              }
-              size={20}
-              color={colors.text.inverse}
-            />
-            <Text style={styles.addItemText}>
-              {editingItem ? 'Update Item' : 'Add Another Item'}
-            </Text>
-          </Pressable>
-        </View>
-      </ScrollView>
-
-      {/* Save Button */}
-      <View style={styles.footer}>
-        <Pressable
-          style={[styles.saveButton, { backgroundColor: colors.primary }]}
-          onPress={handleSaveList}
-        >
-          <Text style={styles.saveButtonText}>Save List</Text>
-        </Pressable>
-      </View>
-
-      {/* Add Unit Picker Modal */}
-      <Modal
-        visible={showUnitPicker}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setShowUnitPicker(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View
-            style={[
-              styles.modalContent,
-              { backgroundColor: colors.background },
-            ]}
-          >
-            <Text style={styles.modalTitle}>Select Unit</Text>
-            <ScrollView>
-              {UNITS.map((unit) => (
-                <Pressable
-                  key={unit}
-                  style={styles.unitOption}
-                  onPress={() => {
-                    setCurrentItem((prev) => ({
-                      ...prev,
-                      unit: unit,
-                    }));
-                    setShowUnitPicker(false);
-                  }}
-                >
-                  <Text
+            {searchQuery ? (
+              // Search Results
+              <View style={styles.searchResults}>
+                {filteredItems.map((item) => (
+                  <Pressable
+                    key={item}
                     style={[
-                      styles.unitOptionText,
-                      unit === currentItem.unit && styles.selectedUnitText,
+                      styles.searchItem,
+                      { backgroundColor: colors.surface },
+                    ]}
+                    onPress={() => handleQuickAdd(item)}
+                  >
+                    <Text style={{ color: colors.text.primary }}>{item}</Text>
+                    <Ionicons
+                      name="add-circle-outline"
+                      size={20}
+                      color={colors.primary}
+                    />
+                  </Pressable>
+                ))}
+              </View>
+            ) : (
+              <>
+                {/* Frequently Bought Items */}
+                {frequentItems.length > 0 && (
+                  <View style={styles.section}>
+                    <Text
+                      style={[
+                        styles.sectionTitle,
+                        { color: colors.text.primary },
+                      ]}
+                    >
+                      Frequently Bought
+                    </Text>
+                    <View style={styles.quickAddGrid}>
+                      {frequentItems.map((item) => (
+                        <Pressable
+                          key={item}
+                          style={[
+                            styles.quickAddItem,
+                            { backgroundColor: colors.surface },
+                          ]}
+                          onPress={() => handleQuickAdd(item)}
+                        >
+                          <Text style={{ color: colors.text.primary }}>
+                            {item}
+                          </Text>
+                        </Pressable>
+                      ))}
+                    </View>
+                  </View>
+                )}
+
+                {/* Categories */}
+                {Object.entries(QUICK_ADD_CATEGORIES).map(
+                  ([category, items]) => (
+                    <View key={category} style={styles.section}>
+                      <Text
+                        style={[
+                          styles.sectionTitle,
+                          { color: colors.text.primary },
+                        ]}
+                      >
+                        {category}
+                      </Text>
+                      <View style={styles.quickAddGrid}>
+                        {items.map((item) => (
+                          <Pressable
+                            key={item}
+                            style={[
+                              styles.quickAddItem,
+                              { backgroundColor: colors.surface },
+                            ]}
+                            onPress={() => handleQuickAdd(item)}
+                          >
+                            <Text style={{ color: colors.text.primary }}>
+                              {item}
+                            </Text>
+                          </Pressable>
+                        ))}
+                      </View>
+                    </View>
+                  )
+                )}
+              </>
+            )}
+
+            {/* Selected Items */}
+            {items.length > 0 && (
+              <View style={styles.section}>
+                <Text
+                  style={[styles.sectionTitle, { color: colors.text.primary }]}
+                >
+                  Selected Items ({items.length})
+                </Text>
+                {items.map((item) => (
+                  <View
+                    key={item.id}
+                    style={[
+                      styles.selectedItem,
+                      { backgroundColor: colors.surface },
                     ]}
                   >
-                    {unit}
-                  </Text>
+                    <Text style={{ color: colors.text.primary }}>
+                      {item.name}
+                    </Text>
+                    <Pressable onPress={() => handleRemoveItem(item.id)}>
+                      <Ionicons
+                        name="close-circle"
+                        size={20}
+                        color={Colors.error.main}
+                      />
+                    </Pressable>
+                  </View>
+                ))}
+              </View>
+            )}
+
+            {/* Next Button */}
+            {items.length > 0 && listName && (
+              <Pressable
+                style={[styles.nextButton, { backgroundColor: colors.primary }]}
+                onPress={() => setStep(2)}
+              >
+                <Text
+                  style={[styles.buttonText, { color: colors.text.inverse }]}
+                >
+                  Continue
+                </Text>
+                <Ionicons
+                  name="arrow-forward"
+                  size={20}
+                  color={colors.text.inverse}
+                />
+              </Pressable>
+            )}
+          </View>
+        ) : (
+          // Step 2: Mall Selection and Finalization
+          <View>
+            <Text style={[styles.title, { color: colors.text.primary }]}>
+              Choose a Mall (Optional)
+            </Text>
+
+            <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
+              Selecting a mall helps track prices and find the best deals
+            </Text>
+
+            <View style={styles.mallList}>
+              {mallState.malls.map((mall) => (
+                <Pressable
+                  key={mall.id}
+                  style={[
+                    styles.mallItem,
+                    { backgroundColor: colors.surface },
+                    selectedMall?.id === mall.id && styles.selectedMall,
+                  ]}
+                  onPress={() => setSelectedMall(mall)}
+                >
+                  <View style={styles.mallInfo}>
+                    <Text
+                      style={[styles.mallName, { color: colors.text.primary }]}
+                    >
+                      {mall.name}
+                    </Text>
+                    {mall.location && (
+                      <Text
+                        style={[
+                          styles.mallLocation,
+                          { color: colors.text.secondary },
+                        ]}
+                      >
+                        {mall.location}
+                      </Text>
+                    )}
+                  </View>
+                  {selectedMall?.id === mall.id && (
+                    <Ionicons
+                      name="checkmark-circle"
+                      size={24}
+                      color={colors.primary}
+                    />
+                  )}
                 </Pressable>
               ))}
-            </ScrollView>
-            <Pressable
-              style={styles.closeButton}
-              onPress={() => setShowUnitPicker(false)}
-            >
-              <Text style={styles.closeButtonText}>Close</Text>
-            </Pressable>
+            </View>
+
+            <View style={styles.buttonRow}>
+              <Pressable
+                style={[styles.backButton, { backgroundColor: colors.surface }]}
+                onPress={() => setStep(1)}
+              >
+                <Ionicons
+                  name="arrow-back"
+                  size={20}
+                  color={colors.text.primary}
+                />
+                <Text
+                  style={[styles.buttonText, { color: colors.text.primary }]}
+                >
+                  Back
+                </Text>
+              </Pressable>
+
+              <Pressable
+                style={[
+                  styles.createButton,
+                  { backgroundColor: colors.primary },
+                ]}
+                onPress={handleCreateList}
+              >
+                <Text
+                  style={[styles.buttonText, { color: colors.text.inverse }]}
+                >
+                  Create List
+                </Text>
+              </Pressable>
+            </View>
           </View>
-        </View>
-      </Modal>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    padding: 16,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  subtitle: {
+    fontSize: 16,
+    marginBottom: 24,
+  },
+  nameInput: {
+    fontSize: 20,
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 24,
+  },
+  section: {
+    marginBottom: 24,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 12,
+  },
+  quickAddGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  quickAddItem: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  selectedItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 16,
+    gap: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+  },
+  searchResults: {
+    gap: 8,
+  },
+  searchItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 8,
+  },
+  mallList: {
+    gap: 8,
+  },
+  mallItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 12,
+  },
+  selectedMall: {
+    borderWidth: 2,
+    borderColor: Colors.primary,
+  },
+  mallInfo: {
+    flex: 1,
+  },
+  mallName: {
+    fontSize: 16,
+    fontWeight: '500',
+    marginBottom: 4,
+  },
+  mallLocation: {
+    fontSize: 14,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 24,
+  },
+  backButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    gap: 8,
+  },
+  createButton: {
+    flex: 2,
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+  },
+  nextButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    borderRadius: 12,
+    marginTop: 24,
+    gap: 8,
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+});
