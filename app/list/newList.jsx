@@ -1,4 +1,6 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
+const generateId = () =>
+  `${Date.now()}-${Math.random().toString(36).substring(2, 11)}`;
 import {
   View,
   Text,
@@ -61,27 +63,51 @@ export default function NewList() {
       .map(([name]) => name);
   }, [listState.purchaseHistory]);
 
-  const handleQuickAdd = (itemName) => {
+  const handleNewItemSubmit = () => {
+    if (!newItemInput.trim()) return;
+
+    const itemLines = newItemInput
+      .split('\n')
+      .map((line) => line.trim())
+      .filter((line) => line.length > 0);
+
+    itemLines.forEach((line) => {
+      const trimmed = line.trim();
+      if (/^\d/.test(trimmed)) {
+        // Only use regex when the line starts with a digit
+        const match = trimmed.match(/^(\d+(?:\.\d+)?)\s+([^\s]+)\s+(.+)$/);
+        if (match) {
+          const [, quantity, unit, name] = match;
+          handleQuickAdd(name.replace(/\s+/g, ' ').trim(), quantity, unit);
+        } else {
+          // Fallback for invalid format but starts with number
+          handleQuickAdd(trimmed, '1', 'pcs');
+        }
+      } else {
+        // No quantity → the whole line is the name
+        handleQuickAdd(trimmed, '1', 'pcs');
+      }
+    });
+
+    setNewItemInput('');
+    setSearchQuery('');
+  };
+  const handleQuickAdd = (itemName, quantity = '1', unit = 'pcs') => {
     if (items.some((item) => item.name === itemName)) return;
+
+    // Ensure quantity is a valid number
+    const numberQuantity = parseFloat(quantity) || 1;
 
     setItems((prev) => [
       ...prev,
       {
-        id: Date.now().toString(),
-        name: itemName,
-        quantity: '1',
-        unit: 'pcs',
+        id: generateId(),
+        name: itemName.replace(/\s+/g, ' ').trim(),
+        quantity: numberQuantity.toString(),
+        unit: unit.trim(),
         purchased: false,
       },
     ]);
-  };
-
-  const handleNewItemSubmit = () => {
-    if (!newItemInput.trim()) return;
-
-    handleQuickAdd(newItemInput.trim());
-    setNewItemInput('');
-    setSearchQuery('');
   };
 
   const handleRemoveItem = (itemId) => {
@@ -216,10 +242,13 @@ export default function NewList() {
                   setNewItemInput(text);
                   setSearchQuery(text);
                 }}
-                placeholder="Add an item..."
+                placeholder="Add items (one per line)..."
                 placeholderTextColor={colors.text.secondary}
                 returnKeyType="done"
                 onSubmitEditing={handleNewItemSubmit}
+                multiline={true}
+                textAlignVertical="top"
+                numberOfLines={3}
               />
               {newItemInput.trim() && (
                 <Pressable onPress={handleNewItemSubmit}>
@@ -259,40 +288,10 @@ export default function NewList() {
               </View>
             ) : (
               <>
-                {/* Frequently Bought Items */}
-                {frequentItems.length > 0 && (
-                  <View style={styles.section}>
-                    <Text
-                      style={[
-                        styles.sectionTitle,
-                        { color: colors.text.primary },
-                      ]}
-                    >
-                      Frequently Bought
-                    </Text>
-                    <View style={styles.quickAddGrid}>
-                      {frequentItems.map((item) => (
-                        <Pressable
-                          key={item}
-                          style={[
-                            styles.quickAddItem,
-                            { backgroundColor: colors.surface },
-                          ]}
-                          onPress={() => handleQuickAdd(item)}
-                        >
-                          <Text style={{ color: colors.text.primary }}>
-                            {item}
-                          </Text>
-                        </Pressable>
-                      ))}
-                    </View>
-                  </View>
-                )}
-
                 {/* Categories */}
                 {Object.entries(QUICK_ADD_CATEGORIES).map(
-                  ([category, items]) => (
-                    <View key={category} style={styles.section}>
+                  ([category, categoryItems]) => (
+                    <View key={`category-${category}`} style={styles.section}>
                       <Text
                         style={[
                           styles.sectionTitle,
@@ -302,9 +301,9 @@ export default function NewList() {
                         {category}
                       </Text>
                       <View style={styles.quickAddGrid}>
-                        {items.map((item) => (
+                        {categoryItems.map((item) => (
                           <Pressable
-                            key={item}
+                            key={`${category}-${item}`}
                             style={[
                               styles.quickAddItem,
                               { backgroundColor: colors.surface },
@@ -321,6 +320,31 @@ export default function NewList() {
                   )
                 )}
               </>
+            )}
+
+            {/* Frequently Bought Items */}
+            {frequentItems.length > 0 && (
+              <View style={styles.section}>
+                <Text
+                  style={[styles.sectionTitle, { color: colors.text.primary }]}
+                >
+                  Frequently Bought
+                </Text>
+                <View style={styles.quickAddGrid}>
+                  {frequentItems.map((item, index) => (
+                    <Pressable
+                      key={`frequent-${item}-${index}`}
+                      style={[
+                        styles.quickAddItem,
+                        { backgroundColor: colors.surface },
+                      ]}
+                      onPress={() => handleQuickAdd(item)}
+                    >
+                      <Text style={{ color: colors.text.primary }}>{item}</Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
             )}
 
             {/* Selected Items */}
@@ -340,15 +364,29 @@ export default function NewList() {
                     ]}
                   >
                     <View style={styles.itemContent}>
-                      <Text style={{ color: colors.text.primary }}>
+                      <Text
+                        style={[
+                          styles.itemText,
+                          { color: colors.text.primary },
+                        ]}
+                        numberOfLines={1}
+                      >
                         {item.name}
                       </Text>
                       <Pressable
                         onPress={() => openUnitSelector(item.id)}
                         style={styles.quantityUnit}
                       >
-                        <Text style={{ color: colors.text.secondary }}>
-                          {item.quantity} {item.unit}
+                        <Text
+                          style={[
+                            styles.quantityUnitText,
+                            { color: colors.text.secondary },
+                          ]}
+                        >
+                          {parseFloat(item.quantity || 0)
+                            .toFixed(2)
+                            .replace(/\.?0+$/, '')}{' '}
+                          {item.unit}
                         </Text>
                         <Ionicons
                           name="chevron-down"
@@ -642,6 +680,30 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
+    padding: 8,
+    textAlignVertical: 'top',
+    minHeight: 80,
+  },
+  itemNameInput: {
+    fontSize: 16,
+    fontWeight: '500',
+    padding: 8,
+    marginBottom: 4,
+    minHeight: 40,
+  },
+  quantityInput: {
+    width: 60,
+    padding: 8,
+    borderRadius: 8,
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  unitInput: {
+    width: 80,
+    padding: 8,
+    borderRadius: 8,
+    fontSize: 14,
+    textAlign: 'center',
   },
   searchResults: {
     gap: 8,
@@ -734,12 +796,6 @@ const styles = StyleSheet.create({
   inputGroup: {
     marginBottom: 16,
   },
-  quantityInput: {
-    flex: 1,
-    marginRight: 8,
-    borderRadius: 8,
-    padding: 12,
-  },
   unitsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -758,12 +814,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 16,
-  },
-  unitInput: {
-    flex: 1,
-    marginRight: 8,
-    borderRadius: 8,
-    padding: 12,
   },
   addUnitButton: {
     borderRadius: 8,

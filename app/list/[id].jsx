@@ -3,7 +3,6 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   Pressable,
   TextInput,
   Alert,
@@ -11,6 +10,10 @@ import {
 import { Stack, useLocalSearchParams, router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import DraggableFlatList, {
+  ScaleDecorator,
+} from 'react-native-draggable-flatlist';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useColorScheme } from '../../hooks/useColorScheme';
 import { useList } from '../../context/list/ListContext';
 import { useMall } from '../../context/mall/MallContext';
@@ -18,6 +21,7 @@ import {
   addPriceRecord,
   addMall,
   updateLastVisited,
+  reorderItems,
 } from '../../context/actions';
 import { Colors } from '../../constants/Colors';
 
@@ -239,6 +243,15 @@ export default function ListDetail() {
     router.back();
   };
 
+  const handleDragEnd = ({ data }) => {
+    const itemIds = data.map((item) => item.id);
+    updateList(list.id, {
+      ...list,
+      items: data,
+    });
+    setHasChanges(true);
+  };
+
   const totalPrice = Object.values(itemPrices).reduce(
     (sum, price) => sum + (Number(price) || 0),
     0
@@ -253,166 +266,245 @@ export default function ListDetail() {
   }
 
   return (
-    <SafeAreaView
-      style={[styles.container, { backgroundColor: colors.background }]}
-    >
-      <Stack.Screen
-        options={{
-          title: list.name,
-          headerTintColor: colors.text.primary,
-          headerStyle: { backgroundColor: colors.background },
-          headerShadowVisible: false,
-          headerShown: false,
-          headerLeft: () => (
-            <Pressable onPress={() => router.back()} style={styles.backButton}>
-              <Ionicons
-                name="arrow-back"
-                size={24}
-                color={colors.text.primary}
-              />
-            </Pressable>
-          ),
-        }}
-      />
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.background }]}
+        edges={['top']} // Don't include bottom edge since we'll handle that with padding
+      >
+        <Stack.Screen
+          options={{
+            title: list.name,
+            headerTintColor: colors.text.primary,
+            headerStyle: { backgroundColor: colors.background },
+            headerShadowVisible: false,
+            headerShown: false,
+            headerLeft: () => (
+              <Pressable
+                onPress={() => router.back()}
+                style={styles.backButton}
+              >
+                <Ionicons
+                  name="arrow-back"
+                  size={24}
+                  color={colors.text.primary}
+                />
+              </Pressable>
+            ),
+          }}
+        />
 
-      <ScrollView style={styles.content}>
         <View style={[styles.metaSection, { backgroundColor: colors.surface }]}>
-          <Text style={[styles.dateText, { color: colors.text.secondary }]}>
+          <Text
+            style={[styles.dateText, { color: colors.text.secondary }]}
+            numberOfLines={1}
+          >
             Created on {new Date(list.dateCreated).toLocaleDateString()}
           </Text>
 
           <View style={styles.metaRow}>
-            <Text style={[styles.itemCount, { color: colors.text.primary }]}>
+            <Text
+              style={[styles.itemCount, { color: colors.text.primary }]}
+              numberOfLines={1}
+            >
               {list.items.length} items
             </Text>
-            <Text style={[styles.totalPrice, { color: colors.text.primary }]}>
-              Total: ₦{totalPrice.toFixed(2)}
+            <Text
+              style={[styles.totalPrice, { color: colors.text.primary }]}
+              numberOfLines={1}
+            >
+              Total: ₦{(totalPrice || 0).toFixed(2).replace(/\.?0+$/, '')}
             </Text>
           </View>
         </View>
 
-        <View style={styles.itemsSection}>
-          {list.items.map((item) => (
-            <Pressable
-              key={item.id}
-              style={[styles.itemRow, { backgroundColor: colors.surface }]}
-              onPress={() => setHasChanges(true)}
-            >
-              <Pressable
-                style={styles.checkbox}
-                onPress={() => handleTogglePurchased(item.id)}
-              >
-                <Ionicons
-                  name={purchasedItems[item.id] ? 'checkbox' : 'square-outline'}
-                  size={24}
-                  color={
-                    purchasedItems[item.id]
-                      ? colors.primary
-                      : colors.text.secondary
-                  }
+        <View style={[styles.itemContent, { backgroundColor: colors.surface }]}>
+          <DraggableFlatList
+            contentContainerStyle={[
+              styles.listContent,
+              { paddingBottom: 80 }, // Add extra padding at bottom for the tab bar
+            ]}
+            ListHeaderComponent={
+              <View>
+                <MallSelector
+                  selectedMall={selectedMall}
+                  onMallSelect={handleMallSelect}
+                  colors={colors}
                 />
-              </Pressable>
-
-              <View style={styles.itemInfo}>
-                <TextInput
-                  style={[styles.itemNameInput, { color: colors.text.primary }]}
-                  value={item.name}
-                  onChangeText={(value) =>
-                    updateList(list.id, {
-                      ...list,
-                      items: list.items.map((i) =>
-                        i.id === item.id ? { ...i, name: value } : i
-                      ),
-                    })
-                  }
-                  placeholder="Item name"
-                  onFocus={() => setHasChanges(true)}
-                />
-                <View style={styles.itemMetaInputs}>
-                  <TextInput
-                    style={[
-                      styles.quantityInput,
-                      { color: colors.text.primary },
-                    ]}
-                    value={item.quantity}
-                    onChangeText={(value) =>
-                      updateList(list.id, {
-                        ...list,
-                        items: list.items.map((i) =>
-                          i.id === item.id ? { ...i, quantity: value } : i
-                        ),
-                      })
-                    }
-                    keyboardType="numeric"
-                    onFocus={() => setHasChanges(true)}
-                  />
-                  <TextInput
-                    style={[styles.unitInput, { color: colors.text.primary }]}
-                    value={item.unit}
-                    onChangeText={(value) =>
-                      updateList(list.id, {
-                        ...list,
-                        items: list.items.map((i) =>
-                          i.id === item.id ? { ...i, unit: value } : i
-                        ),
-                      })
-                    }
-                    onFocus={() => setHasChanges(true)}
-                  />
-                </View>
+                <StoreSection selectedMall={selectedMall} colors={colors} />
               </View>
-
-              {purchasedItems[item.id] && (
-                <View style={styles.priceInputContainer}>
-                  <Text
-                    style={[styles.currency, { color: colors.text.secondary }]}
-                  >
-                    ₦
-                  </Text>
-                  <TextInput
+            }
+            ListFooterComponent={
+              hasChanges ? (
+                <View style={styles.footer}>
+                  <Pressable
                     style={[
-                      styles.priceInput,
-                      {
-                        color: colors.text.primary,
-                        backgroundColor: colors.surface,
-                      },
+                      styles.saveButton,
+                      { backgroundColor: colors.primary },
                     ]}
-                    value={itemPrices[item.id] || ''}
-                    onChangeText={(value) => handlePriceChange(item.id, value)}
-                    placeholder="0.00"
-                    keyboardType="numeric"
-                    placeholderTextColor={colors.text.secondary}
-                  />
+                    onPress={handleSaveChanges}
+                  >
+                    <Text
+                      style={[
+                        styles.saveButtonText,
+                        { color: colors.text.inverse },
+                      ]}
+                    >
+                      Save Changes
+                    </Text>
+                  </Pressable>
                 </View>
-              )}
-            </Pressable>
-          ))}
+              ) : null
+            }
+            data={list.items}
+            onDragEnd={handleDragEnd}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item, drag, isActive }) => (
+              <ScaleDecorator>
+                <Pressable
+                  onLongPress={drag}
+                  disabled={isActive}
+                  style={[
+                    styles.itemRow,
+                    {
+                      backgroundColor: isActive
+                        ? colors.primary + '20'
+                        : colors.surface,
+                    },
+                  ]}
+                >
+                  <View style={styles.dragHandle}>
+                    <Ionicons
+                      name="menu"
+                      size={24}
+                      color={colors.text.secondary}
+                    />
+                  </View>
+
+                  <Pressable
+                    style={styles.checkbox}
+                    onPress={() => handleTogglePurchased(item.id)}
+                  >
+                    <Ionicons
+                      name={
+                        purchasedItems[item.id] ? 'checkbox' : 'square-outline'
+                      }
+                      size={24}
+                      color={
+                        purchasedItems[item.id]
+                          ? colors.primary
+                          : colors.text.secondary
+                      }
+                    />
+                  </Pressable>
+
+                  <View style={styles.itemInfo}>
+                    <TextInput
+                      style={[
+                        styles.itemNameInput,
+                        { color: colors.text.primary },
+                      ]}
+                      value={item.name} // Remove the trim() here since we're handling it properly when adding
+                      onChangeText={(value) =>
+                        updateList(list.id, {
+                          ...list,
+                          items: list.items.map((i) =>
+                            i.id === item.id
+                              ? {
+                                  ...i,
+                                  name: value.replace(/\s+/g, ' ').trim(),
+                                }
+                              : i
+                          ),
+                        })
+                      }
+                      placeholder="Item name"
+                      onFocus={() => setHasChanges(true)}
+                    />
+                    <View style={styles.itemMetaInputs}>
+                      <TextInput
+                        style={[
+                          styles.quantityInput,
+                          { color: colors.text.primary },
+                        ]}
+                        value={
+                          // Format quantity without unnecessary decimals
+                          item.quantity
+                            ? parseFloat(item.quantity).toString()
+                            : '1'
+                        }
+                        onChangeText={(value) =>
+                          updateList(list.id, {
+                            ...list,
+                            items: list.items.map((i) =>
+                              i.id === item.id ? { ...i, quantity: value } : i
+                            ),
+                          })
+                        }
+                        keyboardType="numeric"
+                        onFocus={() => setHasChanges(true)}
+                        placeholder="1"
+                      />
+                      <TextInput
+                        style={[
+                          styles.unitInput,
+                          { color: colors.text.primary },
+                        ]}
+                        value={item.unit}
+                        onChangeText={(value) =>
+                          updateList(list.id, {
+                            ...list,
+                            items: list.items.map((i) =>
+                              i.id === item.id ? { ...i, unit: value } : i
+                            ),
+                          })
+                        }
+                        onFocus={() => setHasChanges(true)}
+                        placeholder="pcs"
+                      />
+                    </View>
+                  </View>
+
+                  {purchasedItems[item.id] && (
+                    <View style={styles.priceInputContainer}>
+                      <Text
+                        style={[
+                          styles.currency,
+                          { color: colors.text.secondary },
+                        ]}
+                        numberOfLines={1}
+                      >
+                        ₦
+                      </Text>
+                      <TextInput
+                        style={[
+                          styles.priceInput,
+                          {
+                            color: colors.text.primary,
+                            backgroundColor: colors.surface,
+                          },
+                        ]}
+                        value={
+                          itemPrices[item.id]
+                            ? parseFloat(itemPrices[item.id]).toFixed(2)
+                            : ''
+                        }
+                        onChangeText={(value) =>
+                          handlePriceChange(item.id, value)
+                        }
+                        placeholder="0.00"
+                        keyboardType="decimal-pad"
+                        placeholderTextColor={colors.text.secondary}
+                        textAlign="right"
+                      />
+                    </View>
+                  )}
+                </Pressable>
+              </ScaleDecorator>
+            )}
+          />
         </View>
-
-        <MallSelector
-          selectedMall={selectedMall}
-          onMallSelect={handleMallSelect}
-          colors={colors}
-        />
-
-        <StoreSection selectedMall={selectedMall} colors={colors} />
-      </ScrollView>
-
-      {hasChanges && (
-        <View style={styles.footer}>
-          <Pressable
-            style={[styles.saveButton, { backgroundColor: colors.primary }]}
-            onPress={handleSaveChanges}
-          >
-            <Text
-              style={[styles.saveButtonText, { color: colors.text.inverse }]}
-            >
-              Save Changes
-            </Text>
-          </Pressable>
-        </View>
-      )}
-    </SafeAreaView>
+      </SafeAreaView>
+    </GestureHandlerRootView>
   );
 }
 
@@ -494,10 +586,11 @@ const styles = StyleSheet.create({
   },
   priceInput: {
     padding: 8,
-    borderRadius: 4,
+    borderRadius: 8,
     width: 80,
     textAlign: 'right',
-    fontSize: 16,
+    fontSize: 14,
+    minHeight: 40,
   },
   footer: {
     padding: 16,
@@ -529,9 +622,19 @@ const styles = StyleSheet.create({
   },
   quantityInput: {
     width: 60,
+    padding: 8,
+    borderRadius: 8,
+    fontSize: 14,
+    textAlign: 'center',
+    backgroundColor: 'rgba(0,0,0,0.05)',
   },
   unitInput: {
     width: 80,
+    padding: 8,
+    borderRadius: 8,
+    fontSize: 14,
+    textAlign: 'center',
+    backgroundColor: 'rgba(0,0,0,0.05)',
   },
   actionButtons: {
     flexDirection: 'row',
@@ -581,8 +684,10 @@ const styles = StyleSheet.create({
   itemNameInput: {
     fontSize: 16,
     fontWeight: '500',
-    padding: 4,
+    padding: 8,
     marginBottom: 4,
+    minHeight: 40,
+    borderRadius: 8,
   },
   itemMetaInputs: {
     flexDirection: 'row',
@@ -654,5 +759,15 @@ const styles = StyleSheet.create({
   selectMallText: {
     fontSize: 16,
     fontWeight: '500',
+  },
+  dragHandle: {
+    marginRight: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 40,
+    height: 40,
+  },
+  listContent: {
+    padding: 16,
   },
 });

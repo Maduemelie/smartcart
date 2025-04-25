@@ -43,8 +43,13 @@ const ListItem = memo(({ list, onDelete }) => {
               key={item.id}
               style={[styles.itemText, { color: colors.text.primary }]}
               numberOfLines={1}
+              ellipsizeMode="tail"
             >
-              • {item.quantity} {item.unit} {item.name}
+              •{' '}
+              {parseFloat(item.quantity || 0)
+                .toFixed(2)
+                .replace(/\.?0+$/, '')}{' '}
+              {item.unit} {item.name.trim()}
             </Text>
           ))}
           {remainingItems > 0 && (
