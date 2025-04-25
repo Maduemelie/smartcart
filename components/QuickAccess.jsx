@@ -4,26 +4,37 @@ import { Ionicons } from '@expo/vector-icons';
 import { useList } from '../context/list/ListContext';
 import { useMall } from '../context/mall/MallContext';
 import { Colors } from '../constants/Colors';
+import { useMemo, useCallback } from 'react';
 
 export default function QuickAccess() {
   const { state: listState } = useList();
   const { state: mallState } = useMall();
 
-  const recentLists = listState.lists
-    .sort((a, b) => new Date(b.dateCreated) - new Date(a.dateCreated))
-    .slice(0, 3);
+  const recentLists = useMemo(() => {
+    if (!Array.isArray(listState?.lists)) return [];
+    return [...listState.lists]
+      .sort((a, b) => new Date(b.dateCreated) - new Date(a.dateCreated))
+      .slice(0, 3);
+  }, [listState?.lists]);
 
-  const favoriteMalls = mallState.malls
-    .filter((mall) => mallState.favorites.includes(mall.id))
-    .slice(0, 3);
+  const favoriteMalls = useMemo(() => {
+    if (!Array.isArray(mallState?.malls)) return [];
+    return mallState.malls
+      .filter(
+        (mall) =>
+          Array.isArray(mallState.favorites) &&
+          mallState.favorites.includes(mall.id)
+      )
+      .slice(0, 3);
+  }, [mallState?.malls, mallState?.favorites]);
 
-  const handleListPress = (listId) => {
+  const handleListPress = useCallback((listId) => {
     router.push(`/list/${listId}`);
-  };
+  }, []);
 
-  const handleMallPress = (mallId) => {
+  const handleMallPress = useCallback((mallId) => {
     router.push(`/mall/${mallId}`);
-  };
+  }, []);
 
   return (
     <View style={styles.container}>

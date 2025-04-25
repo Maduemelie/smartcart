@@ -9,6 +9,14 @@ export const LIST_ACTIONS = {
   REMOVE_ITEM: 'REMOVE_ITEM',
   ADD_TO_HISTORY: 'ADD_TO_HISTORY',
   LOAD_HISTORY: 'LOAD_HISTORY',
+  SAVE_AS_TEMPLATE: 'SAVE_AS_TEMPLATE',
+  LOAD_TEMPLATE: 'LOAD_TEMPLATE',
+  DELETE_TEMPLATE: 'DELETE_TEMPLATE',
+  REORDER_ITEMS: 'REORDER_ITEMS',
+  BATCH_ADD_ITEMS: 'BATCH_ADD_ITEMS',
+  ADD_CUSTOM_UNIT: 'ADD_CUSTOM_UNIT',
+  SET_LIST_SORT: 'SET_LIST_SORT',
+  SET_LIST_FILTER: 'SET_LIST_FILTER',
 };
 
 // Mall Actions
@@ -69,6 +77,46 @@ export const addToHistory = (purchaseData) => ({
 export const loadHistory = (history) => ({
   type: LIST_ACTIONS.LOAD_HISTORY,
   payload: history,
+});
+
+export const saveAsTemplate = (listId, templateName) => ({
+  type: LIST_ACTIONS.SAVE_AS_TEMPLATE,
+  payload: { listId, templateName },
+});
+
+export const loadTemplate = (templateId) => ({
+  type: LIST_ACTIONS.LOAD_TEMPLATE,
+  payload: templateId,
+});
+
+export const deleteTemplate = (templateId) => ({
+  type: LIST_ACTIONS.DELETE_TEMPLATE,
+  payload: templateId,
+});
+
+export const reorderItems = (listId, itemIds) => ({
+  type: LIST_ACTIONS.REORDER_ITEMS,
+  payload: { listId, itemIds },
+});
+
+export const batchAddItems = (listId, items) => ({
+  type: LIST_ACTIONS.BATCH_ADD_ITEMS,
+  payload: { listId, items },
+});
+
+export const addCustomUnit = (unit) => ({
+  type: LIST_ACTIONS.ADD_CUSTOM_UNIT,
+  payload: unit,
+});
+
+export const setListSort = (sortBy, sortOrder) => ({
+  type: LIST_ACTIONS.SET_LIST_SORT,
+  payload: { sortBy, sortOrder },
+});
+
+export const setListFilter = (filters) => ({
+  type: LIST_ACTIONS.SET_LIST_FILTER,
+  payload: filters,
 });
 
 // Mall Action Creators

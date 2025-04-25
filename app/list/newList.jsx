@@ -33,13 +33,19 @@ const QUICK_ADD_CATEGORIES = {
 
 export default function NewList() {
   const { colors } = useColorScheme();
-  const { createList, state: listState } = useList();
+  const { createList, state: listState, addCustomUnit } = useList();
   const { state: mallState } = useMall();
   const [step, setStep] = useState(1);
   const [listName, setListName] = useState('');
   const [items, setItems] = useState([]);
   const [selectedStore, setSelectedStore] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [newItemInput, setNewItemInput] = useState('');
+  const [showUnitModal, setShowUnitModal] = useState(false);
+  const [selectedItemId, setSelectedItemId] = useState(null);
+  const [newUnitInput, setNewUnitInput] = useState('');
+  const [tempQuantity, setTempQuantity] = useState('');
+  const [tempUnit, setTempUnit] = useState('');
 
   // Get frequently bought items from purchase history
   const frequentItems = useMemo(() => {
@@ -68,6 +74,14 @@ export default function NewList() {
         purchased: false,
       },
     ]);
+  };
+
+  const handleNewItemSubmit = () => {
+    if (!newItemInput.trim()) return;
+
+    handleQuickAdd(newItemInput.trim());
+    setNewItemInput('');
+    setSearchQuery('');
   };
 
   const handleRemoveItem = (itemId) => {
@@ -123,6 +137,40 @@ export default function NewList() {
     return Array.from(results);
   }, [searchQuery, frequentItems]);
 
+  const handleUpdateItemMeta = (itemId, updates) => {
+    setItems((prev) =>
+      prev.map((item) => (item.id === itemId ? { ...item, ...updates } : item))
+    );
+  };
+
+  const handleAddCustomUnit = () => {
+    if (!newUnitInput.trim()) return;
+    addCustomUnit(newUnitInput.trim());
+    setTempUnit(newUnitInput.trim());
+    setNewUnitInput('');
+  };
+
+  const openUnitSelector = (itemId) => {
+    const item = items.find((i) => i.id === itemId);
+    setSelectedItemId(itemId);
+    setTempQuantity(item.quantity);
+    setTempUnit(item.unit);
+    setShowUnitModal(true);
+  };
+
+  const saveItemMeta = () => {
+    if (selectedItemId) {
+      handleUpdateItemMeta(selectedItemId, {
+        quantity: tempQuantity || '1',
+        unit: tempUnit || 'pcs',
+      });
+    }
+    setShowUnitModal(false);
+    setSelectedItemId(null);
+    setTempQuantity('');
+    setTempUnit('');
+  };
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: colors.background }]}
@@ -136,7 +184,6 @@ export default function NewList() {
 
       <ScrollView style={styles.content}>
         {step === 1 ? (
-          // Step 1: Name and Quick Add
           <View>
             <Text style={[styles.title, { color: colors.text.primary }]}>
               Create a New Shopping List
@@ -150,15 +197,39 @@ export default function NewList() {
               placeholderTextColor={colors.text.secondary}
             />
 
-            <View style={styles.searchContainer}>
-              <Ionicons name="search" size={20} color={colors.text.secondary} />
+            {/* New Item Input with Auto-complete */}
+            <View
+              style={[
+                styles.searchContainer,
+                { backgroundColor: colors.surface },
+              ]}
+            >
+              <Ionicons
+                name="add-circle-outline"
+                size={20}
+                color={colors.text.secondary}
+              />
               <TextInput
                 style={[styles.searchInput, { color: colors.text.primary }]}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-                placeholder="Search items..."
+                value={newItemInput}
+                onChangeText={(text) => {
+                  setNewItemInput(text);
+                  setSearchQuery(text);
+                }}
+                placeholder="Add an item..."
                 placeholderTextColor={colors.text.secondary}
+                returnKeyType="done"
+                onSubmitEditing={handleNewItemSubmit}
               />
+              {newItemInput.trim() && (
+                <Pressable onPress={handleNewItemSubmit}>
+                  <Ionicons
+                    name="checkmark-circle"
+                    size={24}
+                    color={colors.primary}
+                  />
+                </Pressable>
+              )}
             </View>
 
             {searchQuery ? (
@@ -171,7 +242,11 @@ export default function NewList() {
                       styles.searchItem,
                       { backgroundColor: colors.surface },
                     ]}
-                    onPress={() => handleQuickAdd(item)}
+                    onPress={() => {
+                      handleQuickAdd(item);
+                      setNewItemInput('');
+                      setSearchQuery('');
+                    }}
                   >
                     <Text style={{ color: colors.text.primary }}>{item}</Text>
                     <Ionicons
@@ -264,9 +339,24 @@ export default function NewList() {
                       { backgroundColor: colors.surface },
                     ]}
                   >
-                    <Text style={{ color: colors.text.primary }}>
-                      {item.name}
-                    </Text>
+                    <View style={styles.itemContent}>
+                      <Text style={{ color: colors.text.primary }}>
+                        {item.name}
+                      </Text>
+                      <Pressable
+                        onPress={() => openUnitSelector(item.id)}
+                        style={styles.quantityUnit}
+                      >
+                        <Text style={{ color: colors.text.secondary }}>
+                          {item.quantity} {item.unit}
+                        </Text>
+                        <Ionicons
+                          name="chevron-down"
+                          size={16}
+                          color={colors.text.secondary}
+                        />
+                      </Pressable>
+                    </View>
                     <Pressable onPress={() => handleRemoveItem(item.id)}>
                       <Ionicons
                         name="close-circle"
@@ -382,6 +472,112 @@ export default function NewList() {
           </View>
         )}
       </ScrollView>
+
+      {/* Unit Selection Modal */}
+      {showUnitModal && (
+        <View
+          style={[styles.modalOverlay, { backgroundColor: 'rgba(0,0,0,0.5)' }]}
+        >
+          <View
+            style={[
+              styles.modalContent,
+              { backgroundColor: colors.background },
+            ]}
+          >
+            <Text style={[styles.modalTitle, { color: colors.text.primary }]}>
+              Set Quantity & Unit
+            </Text>
+
+            <View style={styles.inputGroup}>
+              <TextInput
+                style={[
+                  styles.quantityInput,
+                  {
+                    backgroundColor: colors.surface,
+                    color: colors.text.primary,
+                  },
+                ]}
+                value={tempQuantity}
+                onChangeText={setTempQuantity}
+                placeholder="1"
+                keyboardType="numeric"
+                placeholderTextColor={colors.text.secondary}
+              />
+
+              <View style={styles.unitsGrid}>
+                {listState.customUnits.map((unit) => (
+                  <Pressable
+                    key={unit}
+                    style={[
+                      styles.unitOption,
+                      { backgroundColor: colors.surface },
+                      tempUnit === unit && styles.selectedUnit,
+                    ]}
+                    onPress={() => setTempUnit(unit)}
+                  >
+                    <Text
+                      style={{
+                        color:
+                          tempUnit === unit
+                            ? colors.primary
+                            : colors.text.primary,
+                      }}
+                    >
+                      {unit}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+
+              <View style={styles.addUnitContainer}>
+                <TextInput
+                  style={[
+                    styles.unitInput,
+                    {
+                      backgroundColor: colors.surface,
+                      color: colors.text.primary,
+                    },
+                  ]}
+                  value={newUnitInput}
+                  onChangeText={setNewUnitInput}
+                  placeholder="Add custom unit"
+                  placeholderTextColor={colors.text.secondary}
+                />
+                <Pressable
+                  onPress={handleAddCustomUnit}
+                  style={[
+                    styles.addUnitButton,
+                    { backgroundColor: colors.primary },
+                  ]}
+                >
+                  <Text style={{ color: colors.text.inverse }}>Add</Text>
+                </Pressable>
+              </View>
+            </View>
+
+            <View style={styles.modalButtons}>
+              <Pressable
+                style={[
+                  styles.modalButton,
+                  { backgroundColor: colors.surface },
+                ]}
+                onPress={() => setShowUnitModal(false)}
+              >
+                <Text style={{ color: colors.text.primary }}>Cancel</Text>
+              </Pressable>
+              <Pressable
+                style={[
+                  styles.modalButton,
+                  { backgroundColor: colors.primary },
+                ]}
+                onPress={saveItemMeta}
+              >
+                <Text style={{ color: colors.text.inverse }}>Save</Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -514,5 +710,75 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  modalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '80%',
+    borderRadius: 12,
+    padding: 16,
+    elevation: 4,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '600',
+    marginBottom: 16,
+  },
+  inputGroup: {
+    marginBottom: 16,
+  },
+  quantityInput: {
+    flex: 1,
+    marginRight: 8,
+    borderRadius: 8,
+    padding: 12,
+  },
+  unitsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 16,
+  },
+  unitOption: {
+    padding: 8,
+    borderRadius: 8,
+  },
+  selectedUnit: {
+    borderWidth: 2,
+    borderColor: Colors.primary,
+  },
+  addUnitContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  unitInput: {
+    flex: 1,
+    marginRight: 8,
+    borderRadius: 8,
+    padding: 12,
+  },
+  addUnitButton: {
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalButton: {
+    flex: 1,
+    marginHorizontal: 4,
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
   },
 });
