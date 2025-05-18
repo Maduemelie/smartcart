@@ -5,34 +5,38 @@ import { Ionicons } from '@expo/vector-icons';
 import { Colors } from '../constants/Colors';
 import { useMall } from '../context/mall/MallContext';
 import { setMallFavorite } from '../context/actions';
+import { useCallback } from 'react';
 
 export default function Malls() {
   const { state, dispatch } = useMall();
   const { malls, favorites } = state;
 
-  const handleAddMall = () => {
+  const handleAddMall = useCallback(() => {
     router.push('/mall/new');
-  };
+  }, []);
 
-  const handlePressMall = (mallId) => {
+  const handlePressMall = useCallback((mallId) => {
     router.push(`/mall/${mallId}`);
-  };
+  }, []);
 
-  const toggleFavorite = (mallId) => {
-    const isFavorite = favorites.includes(mallId);
-    dispatch(setMallFavorite(mallId, !isFavorite));
-  };
+  const toggleFavorite = useCallback(
+    (mallId) => {
+      const isFavorite = favorites.includes(mallId);
+      dispatch(setMallFavorite(mallId, !isFavorite));
+    },
+    [favorites, dispatch]
+  );
 
   return (
     <SafeAreaView style={styles.container}>
       <Stack.Screen
         options={{
           title: 'Saved Malls',
-          headerRight: () => (
-            <Pressable onPress={handleAddMall} style={styles.addButton}>
-              <Ionicons name="add-circle" size={24} color={Colors.primary} />
-            </Pressable>
-          ),
+          headerStyle: {
+            backgroundColor: Colors.background,
+          },
+          headerShadowVisible: false,
+          headerTintColor: Colors.text.primary,
         }}
       />
       <ScrollView style={styles.content}>
@@ -86,6 +90,16 @@ export default function Malls() {
           </View>
         )}
       </ScrollView>
+      <Pressable
+        onPress={handleAddMall}
+        style={({ pressed }) => [
+          styles.addMallButton,
+          { opacity: pressed ? 0.7 : 1 },
+        ]}
+      >
+        <Ionicons name="add" size={24} color="white" />
+        <Text style={styles.addMallButtonText}>Add New Mall</Text>
+      </Pressable>
     </SafeAreaView>
   );
 }
@@ -94,10 +108,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-  },
-  addButton: {
-    padding: 8,
-    marginRight: 8,
   },
   mallCard: {
     flexDirection: 'row',
@@ -163,5 +173,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: Colors.text.secondary,
     textAlign: 'center',
+  },
+  addMallButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: Colors.primary,
+    padding: 16,
+    borderRadius: 12,
+    marginHorizontal: 16,
+    marginBottom: 16,
+    gap: 8,
+  },
+  addMallButtonText: {
+    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });

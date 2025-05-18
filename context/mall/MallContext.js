@@ -51,9 +51,18 @@ export function MallProvider({ children }) {
     }
   };
 
+  const createMall = (mall) => {
+    const mallWithId = {
+      ...mall,
+      id: mall.id || Date.now().toString(),
+    };
+    dispatch({ type: 'ADD_MALL', payload: mallWithId });
+  };
+
   const value = {
     state,
     dispatch,
+    createMall,
     stats: {
       getTotalLists: (mallId) => state.mallStats[mallId]?.totalLists || 0,
       getPriceUpdates: (mallId) =>

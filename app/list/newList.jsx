@@ -41,6 +41,16 @@ export default function NewList() {
   const [listName, setListName] = useState('');
   const [items, setItems] = useState([]);
   const [selectedStore, setSelectedStore] = useState(null);
+
+  // Skip store selection step if no malls available
+  const goToStep = (targetStep) => {
+    if (targetStep === 2 && mallState.malls.length === 0) {
+      // If no malls, skip to create list directly
+      handleCreateList();
+    } else {
+      setStep(targetStep);
+    }
+  };
   const [searchQuery, setSearchQuery] = useState('');
   const [newItemInput, setNewItemInput] = useState('');
   const [showUnitModal, setShowUnitModal] = useState(false);
@@ -95,7 +105,7 @@ export default function NewList() {
   const handleQuickAdd = (itemName, quantity = '1', unit = 'pcs') => {
     if (items.some((item) => item.name === itemName)) return;
 
-    // Ensure quantity is a valid number
+    // Ensure quantity iso a valid number
     const numberQuantity = parseFloat(quantity) || 1;
 
     setItems((prev) => [
@@ -411,7 +421,7 @@ export default function NewList() {
             {items.length > 0 && listName && (
               <Pressable
                 style={[styles.nextButton, { backgroundColor: colors.primary }]}
-                onPress={() => setStep(2)}
+                onPress={() => goToStep(2)}
               >
                 <Text
                   style={[styles.buttonText, { color: colors.text.inverse }]}

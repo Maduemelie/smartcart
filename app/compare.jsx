@@ -1,12 +1,23 @@
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '../hooks/useColorScheme';
 import { useMall } from '../context/mall/MallContext';
+import PriceChart from '../components/PriceChart';
+import { useState } from 'react';
 
 export default function Compare() {
   const { colors } = useColorScheme();
   const { state: mallState } = useMall();
+  const [expandedItems, setExpandedItems] = useState({});
+
+  const toggleItemExpanded = (itemName) => {
+    setExpandedItems((prev) => ({
+      ...prev,
+      [itemName]: !prev[itemName],
+    }));
+  };
 
   const getStorePrices = (itemName) => {
     const storePrices = {};
@@ -31,17 +42,36 @@ export default function Compare() {
     );
   };
 
+  // Get price history data for a specific item
+  const getItemPriceHistory = (itemName) => {
+    return mallState.priceHistory.filter(
+      (record) => record.itemName === itemName
+    );
+  };
+
   const renderPriceComparison = (itemName) => {
     const storePrices = getStorePrices(itemName);
     if (Object.keys(storePrices).length === 0) return null;
 
     const bestPrice = getBestPrice(storePrices);
+    const isExpanded = expandedItems[itemName] || false;
+    const priceHistoryData = getItemPriceHistory(itemName);
 
     return (
       <View style={[styles.card, { backgroundColor: colors.surface }]}>
-        <Text style={[styles.cardTitle, { color: colors.text.primary }]}>
-          {itemName}
-        </Text>
+        <Pressable
+          style={styles.cardHeader}
+          onPress={() => toggleItemExpanded(itemName)}
+        >
+          <Text style={[styles.cardTitle, { color: colors.text.primary }]}>
+            {itemName}
+          </Text>
+          <Ionicons
+            name={isExpanded ? 'chevron-up' : 'chevron-down'}
+            size={20}
+            color={colors.text.secondary}
+          />
+        </Pressable>
         <View style={styles.priceContainer}>
           {Object.entries(storePrices).map(([storeId, data]) => (
             <View key={storeId} style={styles.priceItem}>
@@ -74,6 +104,14 @@ export default function Compare() {
               bestPrice
             ).toFixed(2)}
           </Text>
+        )}
+
+        {isExpanded && priceHistoryData.length > 0 && (
+          <PriceChart
+            priceData={priceHistoryData}
+            itemName={itemName}
+            stores={mallState.malls}
+          />
         )}
       </View>
     );

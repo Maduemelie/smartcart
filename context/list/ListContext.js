@@ -8,6 +8,7 @@ import {
 import { listReducer } from './listReducer';
 import { loadPersistedState, persistState } from '../../utils/persistence';
 import * as actions from '../actions';
+import { useMall } from '../mall/MallContext';
 
 const initialState = {
   lists: [],
@@ -23,6 +24,7 @@ export const ListContext = createContext();
 
 export function ListProvider({ children }) {
   const [state, dispatch] = useReducer(listReducer, initialState);
+  const { dispatch: mallDispatch } = useMall() || { dispatch: null };
 
   useEffect(() => {
     loadStoredData();
@@ -149,7 +151,18 @@ export function ListProvider({ children }) {
     createList: (list) => dispatch(actions.createList(list)),
     updateList: (listId, updatedList) =>
       dispatch(actions.updateList(listId, updatedList)),
-    deleteList: (listId) => dispatch(actions.deleteList(listId)),
+    deleteList: (listId) => {
+      // Find the list to check if it has an associated mall
+      const listToDelete = state.lists.find((list) => list.id === listId);
+
+      // Delete the list
+      dispatch(actions.deleteList(listId));
+
+      // If the list has an associated mall, remove the list from that mall
+      if (listToDelete && listToDelete.mallId && mallDispatch) {
+        mallDispatch(actions.removeListFromMall(listToDelete.mallId, listId));
+      }
+    },
     addItem: (listId, item) => dispatch(actions.addItem(listId, item)),
     updateItem: (listId, itemId, updates) =>
       dispatch(actions.updateItem(listId, itemId, updates)),

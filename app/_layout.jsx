@@ -133,6 +133,14 @@ export default function AppContent() {
                     }}
                   />
                   <Stack.Screen
+                    name="mall/new"
+                    options={{
+                      title: 'Add New Mall',
+                      animation: 'slide_from_right',
+                      headerShown: false,
+                    }}
+                  />
+                  <Stack.Screen
                     name="profile"
                     options={{
                       title: 'Profile',
