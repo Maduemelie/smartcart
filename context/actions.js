@@ -7,16 +7,10 @@ export const LIST_ACTIONS = {
   ADD_ITEM: 'ADD_ITEM',
   UPDATE_ITEM: 'UPDATE_ITEM',
   REMOVE_ITEM: 'REMOVE_ITEM',
-  ADD_TO_HISTORY: 'ADD_TO_HISTORY',
-  LOAD_HISTORY: 'LOAD_HISTORY',
-  SAVE_AS_TEMPLATE: 'SAVE_AS_TEMPLATE',
-  LOAD_TEMPLATE: 'LOAD_TEMPLATE',
-  DELETE_TEMPLATE: 'DELETE_TEMPLATE',
-  REORDER_ITEMS: 'REORDER_ITEMS',
-  BATCH_ADD_ITEMS: 'BATCH_ADD_ITEMS',
-  ADD_CUSTOM_UNIT: 'ADD_CUSTOM_UNIT',
-  SET_LIST_SORT: 'SET_LIST_SORT',
-  SET_LIST_FILTER: 'SET_LIST_FILTER',
+  MOVE_ITEM_TO_PURCHASED: 'MOVE_ITEM_TO_PURCHASED',
+  UPDATE_PURCHASED_ITEM_PRICE: 'UPDATE_PURCHASED_ITEM_PRICE',
+  UPDATE_PURCHASED_ITEM_STORE: 'UPDATE_PURCHASED_ITEM_STORE',
+  MOVE_ITEM_TO_SHOPPING_LIST: 'MOVE_ITEM_TO_SHOPPING_LIST',
 };
 
 // Mall Actions
@@ -59,9 +53,9 @@ export const addItem = (listId, item) => ({
   payload: { listId, item },
 });
 
-export const updateItem = (listId, itemId, item) => ({
+export const updateItem = (listId, itemId, updates) => ({
   type: LIST_ACTIONS.UPDATE_ITEM,
-  payload: { listId, itemId, item },
+  payload: { listId, itemId, updates },
 });
 
 export const removeItem = (listId, itemId) => ({
@@ -69,56 +63,25 @@ export const removeItem = (listId, itemId) => ({
   payload: { listId, itemId },
 });
 
-export const addToHistory = (purchaseData) => ({
-  type: LIST_ACTIONS.ADD_TO_HISTORY,
-  payload: purchaseData,
+// Purchase tracking action creators (ADDED)
+export const moveItemToPurchased = (listId, itemId, storeId, price) => ({
+  type: LIST_ACTIONS.MOVE_ITEM_TO_PURCHASED,
+  payload: { listId, itemId, storeId, price },
 });
 
-export const loadHistory = (history) => ({
-  type: LIST_ACTIONS.LOAD_HISTORY,
-  payload: history,
+export const updatePurchasedItemPrice = (listId, itemId, price) => ({
+  type: LIST_ACTIONS.UPDATE_PURCHASED_ITEM_PRICE,
+  payload: { listId, itemId, price },
 });
 
-export const saveAsTemplate = (listId, templateName) => ({
-  type: LIST_ACTIONS.SAVE_AS_TEMPLATE,
-  payload: { listId, templateName },
+export const updatePurchasedItemStore = (listId, itemId, storeId) => ({
+  type: LIST_ACTIONS.UPDATE_PURCHASED_ITEM_STORE,
+  payload: { listId, itemId, storeId },
 });
-
-export const loadTemplate = (templateId) => ({
-  type: LIST_ACTIONS.LOAD_TEMPLATE,
-  payload: templateId,
+export const moveItemToShoppingList = (listId, itemId) => ({
+  type: LIST_ACTIONS.MOVE_ITEM_TO_SHOPPING_LIST,
+  payload: { listId, itemId },
 });
-
-export const deleteTemplate = (templateId) => ({
-  type: LIST_ACTIONS.DELETE_TEMPLATE,
-  payload: templateId,
-});
-
-export const reorderItems = (listId, itemIds) => ({
-  type: LIST_ACTIONS.REORDER_ITEMS,
-  payload: { listId, itemIds },
-});
-
-export const batchAddItems = (listId, items) => ({
-  type: LIST_ACTIONS.BATCH_ADD_ITEMS,
-  payload: { listId, items },
-});
-
-export const addCustomUnit = (unit) => ({
-  type: LIST_ACTIONS.ADD_CUSTOM_UNIT,
-  payload: unit,
-});
-
-export const setListSort = (sortBy, sortOrder) => ({
-  type: LIST_ACTIONS.SET_LIST_SORT,
-  payload: { sortBy, sortOrder },
-});
-
-export const setListFilter = (filters) => ({
-  type: LIST_ACTIONS.SET_LIST_FILTER,
-  payload: filters,
-});
-
 // Mall Action Creators
 export const initializeMallData = (data) => ({
   type: MALL_ACTIONS.INITIALIZE_DATA,

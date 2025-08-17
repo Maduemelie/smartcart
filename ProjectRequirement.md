@@ -256,3 +256,32 @@ Required Libraries:
 - Performance monitoring
 - User feedback implementation
 - Regular security updates
+
+### designs for the app
+
+#### the screen for display of items on a list individual list screen
+
+##### Page Structure
+
+###### Header Section
+
+      -Title displaying the list name
+      -Last modified date/time
+      -Edit button (pencil icon) to modify list details
+
+###### Items List Section
+
+      Grid or list view of items with:
+      Item name
+      Quantity and unit
+      Price input field (for purchased items)
+      Checkbox to mark as purchased
+      Delete button/icon
+
+###### Action Buttons Section
+
+      "Add Item" button to add new items to the list
+      "Compare Prices" button to show price comparisons across stores
+      "Mark All as Purchased" button
+      "Share List" button
+      "Modify List" button to modify list details

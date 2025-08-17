@@ -5,23 +5,25 @@ export function listReducer(state, action) {
     case LIST_ACTIONS.INITIALIZE_DATA:
       return {
         ...state,
-        lists: action.payload || [], // Ensure we always have an array
+        lists: action.payload?.lists || [],
+        purchaseHistory: action.payload?.purchaseHistory || [],
         isLoading: false,
       };
 
     case LIST_ACTIONS.CREATE_LIST:
       const newList = {
+        id: action.payload.id || `list-${Date.now()}`,
+        name: action.payload.name,
+        items: [],
+        purchasedItems: [],
+        dateCreated: new Date().toISOString(),
+        lastUpdated: new Date().toISOString(),
         ...action.payload,
-        id: action.payload.id || Date.now().toString(),
-        dateCreated: action.payload.dateCreated || new Date().toISOString(),
-        items: Array.isArray(action.payload.items) ? action.payload.items : [],
       };
 
       return {
         ...state,
-        lists: Array.isArray(state.lists)
-          ? [...state.lists, newList]
-          : [newList],
+        lists: [...state.lists, newList],
       };
 
     case LIST_ACTIONS.UPDATE_LIST:
@@ -29,7 +31,11 @@ export function listReducer(state, action) {
         ...state,
         lists: state.lists.map((list) =>
           list.id === action.payload.listId
-            ? { ...list, ...action.payload.updatedList }
+            ? {
+                ...list,
+                ...action.payload.updatedList,
+                lastUpdated: new Date().toISOString(),
+              }
             : list
         ),
       };
@@ -41,19 +47,23 @@ export function listReducer(state, action) {
       };
 
     case LIST_ACTIONS.ADD_ITEM:
+      const newItem = {
+        id: action.payload.item.id || `item-${Date.now()}`,
+        name: action.payload.item.name,
+        quantity: action.payload.item.quantity || 1,
+        unit: action.payload.item.unit || 'pcs',
+        dateAdded: new Date().toISOString(),
+        ...action.payload.item,
+      };
+
       return {
         ...state,
         lists: state.lists.map((list) =>
           list.id === action.payload.listId
             ? {
                 ...list,
-                items: [
-                  ...list.items,
-                  {
-                    id: Date.now().toString(),
-                    ...action.payload.item,
-                  },
-                ],
+                items: [...list.items, newItem],
+                lastUpdated: new Date().toISOString(),
               }
             : list
         ),
@@ -71,6 +81,83 @@ export function listReducer(state, action) {
                     ? { ...item, ...action.payload.updates }
                     : item
                 ),
+                lastUpdated: new Date().toISOString(),
+              }
+            : list
+        ),
+      };
+
+    case LIST_ACTIONS.MOVE_ITEM_TO_PURCHASED:
+      const { listId, itemId, storeId, price } = action.payload;
+      const list = state.lists.find((l) => l.id === listId);
+      if (!list) return state;
+
+      const item = list.items.find((i) => i.id === itemId);
+      if (!item) return state;
+
+      const updatedItems = list.items.filter((i) => i.id !== itemId);
+      const purchasedItem = {
+        ...item,
+        storeId,
+        price,
+        datePurchased: new Date().toISOString(),
+        listId,
+      };
+
+      const historyItem = {
+        ...purchasedItem,
+        itemId: item.id, // Explicitly store the original item's ID
+        id: `hist-${item.id}-${new Date().getTime()}`, // This is a unique ID for the history entry itself
+      };
+
+      return {
+        ...state,
+        lists: state.lists.map((list) =>
+          list.id === listId
+            ? {
+                ...list,
+                items: updatedItems,
+                purchasedItems: [...(list.purchasedItems || []), purchasedItem],
+                lastUpdated: new Date().toISOString(),
+              }
+            : list
+        ),
+        purchaseHistory: [...state.purchaseHistory, historyItem],
+      };
+
+    case LIST_ACTIONS.UPDATE_PURCHASED_ITEM_PRICE:
+      const { listId: plid, itemId: piid, price: newPrice } = action.payload;
+      return {
+        ...state,
+        lists: state.lists.map((list) =>
+          list.id === plid
+            ? {
+                ...list,
+                purchasedItems: (list.purchasedItems || []).map((item) =>
+                  item.id === piid ? { ...item, price: newPrice } : item
+                ),
+                lastUpdated: new Date().toISOString(),
+              }
+            : list
+        ),
+      };
+
+    case LIST_ACTIONS.UPDATE_PURCHASED_ITEM_STORE:
+      const {
+        listId: slid,
+        itemId: siid,
+        storeId: newStoreId,
+      } = action.payload;
+      return {
+        ...state,
+        lists: state.lists.map((list) =>
+          list.id === slid
+            ? {
+                ...list,
+                purchasedItems: (list.purchasedItems || []).map((item) =>
+                  item.id === siid ? { ...item, storeId: newStoreId } : item
+                ),
+                lastUpdated: new Date().toISOString(),
               }
             : list
         ),
@@ -86,133 +173,53 @@ export function listReducer(state, action) {
                 items: list.items.filter(
                   (item) => item.id !== action.payload.itemId
                 ),
+                purchasedItems: (list.purchasedItems || []).filter(
+                  (item) => item.id !== action.payload.itemId
+                ),
+                lastUpdated: new Date().toISOString(),
               }
             : list
         ),
       };
+    case LIST_ACTIONS.MOVE_ITEM_TO_SHOPPING_LIST: {
+      const { listId: targetListId, itemId: targetItemId } = action.payload;
 
-    case LIST_ACTIONS.ADD_TO_HISTORY:
-      return {
-        ...state,
-        purchaseHistory: [
-          ...state.purchaseHistory,
-          {
-            id: Date.now().toString(),
-            date: new Date().toISOString(),
-            ...action.payload,
-          },
-        ],
-      };
+      const targetList = state.lists.find((l) => l.id === targetListId);
+      if (!targetList) return state;
 
-    case LIST_ACTIONS.LOAD_HISTORY:
-      return {
-        ...state,
-        purchaseHistory: action.payload,
-      };
-
-    case LIST_ACTIONS.SAVE_AS_TEMPLATE:
-      const templateList = state.lists.find(
-        (list) => list.id === action.payload.listId
+      const moveItem = targetList.purchasedItems.find(
+        (item) => item.id === targetItemId
       );
-      if (!templateList) return state;
+      if (!moveItem) return state;
 
-      return {
-        ...state,
-        templates: [
-          ...(state.templates || []),
-          {
-            id: Date.now().toString(),
-            name: action.payload.templateName,
-            items: templateList.items,
-            dateCreated: new Date().toISOString(),
-          },
-        ],
-      };
+      const updatedPurchasedItems = targetList.purchasedItems.filter(
+        (item) => item.id !== targetItemId
+      );
 
-    case LIST_ACTIONS.LOAD_TEMPLATE:
-      const template = state.templates?.find((t) => t.id === action.payload);
-      if (!template) return state;
-
-      return {
-        ...state,
-        lists: [
-          ...state.lists,
-          {
-            ...template,
-            id: Date.now().toString(),
-            dateCreated: new Date().toISOString(),
-            isFromTemplate: true,
-            templateId: template.id,
-          },
-        ],
-      };
-
-    case LIST_ACTIONS.DELETE_TEMPLATE:
-      return {
-        ...state,
-        templates:
-          state.templates?.filter((t) => t.id !== action.payload) || [],
-      };
-
-    case LIST_ACTIONS.REORDER_ITEMS:
-      return {
-        ...state,
-        lists: state.lists.map((list) => {
-          if (list.id !== action.payload.listId) return list;
-
-          const reorderedItems = action.payload.itemIds
-            .map((itemId) => list.items.find((item) => item.id === itemId))
-            .filter(Boolean);
-
-          return {
-            ...list,
-            items: reorderedItems,
-          };
-        }),
-      };
-
-    case LIST_ACTIONS.BATCH_ADD_ITEMS:
-      return {
-        ...state,
-        lists: state.lists.map((list) => {
-          if (list.id !== action.payload.listId) return list;
-
-          const newItems = action.payload.items.map((item) => ({
-            id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
-            name: item.name,
-            quantity: item.quantity || '1',
-            unit: item.unit || 'pcs',
-            purchased: false,
-            dateAdded: new Date().toISOString(),
-          }));
-
-          return {
-            ...list,
-            items: [...list.items, ...newItems],
-          };
-        }),
-      };
-
-    case LIST_ACTIONS.ADD_CUSTOM_UNIT:
-      return {
-        ...state,
-        customUnits: [...(state.customUnits || []), action.payload],
-      };
-
-    case LIST_ACTIONS.SET_LIST_SORT:
-      return {
-        ...state,
-        sortSettings: {
-          by: action.payload.sortBy,
-          order: action.payload.sortOrder,
+      const updatedShoppingItems = [
+        {
+          ...moveItem,
+          storeId: null,
+          price: null,
+          dateAdded: new Date().toISOString(),
         },
-      };
+        ...targetList.items,
+      ];
 
-    case LIST_ACTIONS.SET_LIST_FILTER:
       return {
         ...state,
-        filterSettings: action.payload,
+        lists: state.lists.map((list) =>
+          list.id === targetListId
+            ? {
+                ...list,
+                items: updatedShoppingItems,
+                purchasedItems: updatedPurchasedItems,
+                lastUpdated: new Date().toISOString(),
+              }
+            : list
+        ),
       };
+    }
 
     default:
       return state;

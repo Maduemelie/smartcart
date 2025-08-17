@@ -1,64 +1,61 @@
-import { View, Text, FlatList, StyleSheet } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, FlatList } from 'react-native';
 import { useList } from '../../context/list/ListContext';
+import { useMall } from '../../context/mall/MallContext';
 import { useColorScheme } from '../../hooks/useColorScheme';
-import { Stack } from 'expo-router';
 
 export default function History() {
   const { state } = useList();
   const { colors } = useColorScheme();
+  const { state: mallState } = useMall();
   const { purchaseHistory } = state;
+  console.log('Current List State:', state);
+  console.log('Purchase History:', purchaseHistory);
 
-  const renderHistoryItem = ({ item }) => (
-    <View style={[styles.historyCard, { backgroundColor: colors.surface }]}>
-      <Text style={[styles.listName, { color: colors.text.primary }]}>
-        {item.listName || 'Shopping List'}
-      </Text>
-      <Text style={[styles.date, { color: colors.text.secondary }]}>
-        {new Date(item.purchaseDate).toLocaleDateString()}
-      </Text>
-      {item.mallId && (
-        <Text style={[styles.store, { color: colors.text.primary }]}>
-          {item.storeName || 'Store not specified'}
+  const renderHistoryItem = ({ item }) => {
+    // Get list name for better UX
+    const list = state.lists.find((l) => l.id === item.listId);
+    // Get store name for better UX
+    const store = mallState.malls.find((m) => m.id === item.storeId);
+
+    return (
+      <View style={[styles.historyCard, { backgroundColor: colors.surface }]}>
+        <Text style={[styles.itemName, { color: colors.text.primary }]}>
+          {item.name}
         </Text>
-      )}
 
-      <View style={styles.itemsList}>
-        {item.items.map((purchasedItem) => (
-          <View key={purchasedItem.id} style={styles.purchasedItem}>
-            <View style={styles.itemDetails}>
-              <Text style={[styles.itemName, { color: colors.text.primary }]}>
-                {purchasedItem.name}
-              </Text>
-              <Text
-                style={[styles.itemQuantity, { color: colors.text.secondary }]}
-              >
-                {purchasedItem.quantity} {purchasedItem.unit}
-              </Text>
-            </View>
-            <Text style={[styles.itemPrice, { color: colors.text.primary }]}>
-              ₦{purchasedItem.price}
+        <View style={styles.metaRow}>
+          <Text style={[styles.metaText, { color: colors.text.secondary }]}>
+            Qty: {item.quantity} {item.unit}
+          </Text>
+          {item.price && (
+            <Text style={[styles.metaText, { color: colors.text.primary }]}>
+              Price: ₦{item.price.toFixed(2)}
             </Text>
-          </View>
-        ))}
-      </View>
+          )}
+        </View>
 
-      <Text style={[styles.total, { color: colors.primary }]}>
-        Total: ₦{item.totalAmount}
-      </Text>
-    </View>
-  );
+        {list && (
+          <Text style={[styles.metaText, { color: colors.text.secondary }]}>
+            List: {list.name}
+          </Text>
+        )}
+
+        {item.storeId && (
+          <Text style={[styles.metaText, { color: colors.text.secondary }]}>
+            Store: {store ? store.name : 'Unknown Store'}
+          </Text>
+        )}
+
+        <Text style={[styles.date, { color: colors.text.secondary }]}>
+          Purchased on: {new Date(item.datePurchased).toLocaleString()}
+        </Text>
+      </View>
+    );
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
-      <Stack.Screen
-        options={{
-          title: 'Purchase History',
-          headerShadowVisible: false,
-          headerStyle: { backgroundColor: colors.background },
-          headerTintColor: colors.text.primary,
-        }}
-      />
-
       <FlatList
         data={purchaseHistory}
         renderItem={renderHistoryItem}
@@ -66,7 +63,7 @@ export default function History() {
         contentContainerStyle={styles.listContainer}
         ListEmptyComponent={() => (
           <View style={styles.emptyState}>
-            <Text style={[styles.emptyText, { color: colors.text.secondary }]}>
+            <Text style={{ color: colors.text.secondary }}>
               No purchase history yet
             </Text>
           </View>
@@ -82,69 +79,39 @@ const styles = StyleSheet.create({
   },
   listContainer: {
     padding: 16,
-    gap: 16,
+    gap: 12,
   },
   historyCard: {
     padding: 16,
-    borderRadius: 12,
-    marginBottom: 16,
+    borderRadius: 10,
+    marginBottom: 12,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.15,
     shadowRadius: 2,
-  },
-  listName: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 4,
-  },
-  date: {
-    fontSize: 14,
-    marginBottom: 8,
-  },
-  store: {
-    fontSize: 14,
-    marginBottom: 12,
-  },
-  itemsList: {
-    marginTop: 8,
-    gap: 8,
-  },
-  purchasedItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 4,
-  },
-  itemDetails: {
-    flex: 1,
   },
   itemName: {
     fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
   },
-  itemQuantity: {
+  metaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  metaText: {
     fontSize: 14,
   },
-  itemPrice: {
-    fontSize: 16,
-    fontWeight: '500',
-    minWidth: 80,
-    textAlign: 'right',
-  },
-  total: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginTop: 16,
-    textAlign: 'right',
+  date: {
+    fontSize: 12,
+    marginTop: 8,
   },
   emptyState: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 32,
-  },
-  emptyText: {
-    fontSize: 16,
   },
 });

@@ -13,46 +13,46 @@ import { useState } from 'react';
 import { useMall } from '../../context/mall/MallContext';
 import { MallLocation } from '../../components/MallLocation';
 import { OperatingHours } from '../../components/OperatingHours';
-import { StoreManagement } from '../../components/StoreManagement';
+// import { StoreManagement } from '../../components/StoreManagement';
 import { Colors } from '../../constants/Colors';
 import { ErrorBoundary } from '../../components/ErrorBoundary';
 import { LoadingSpinner } from '../../components/LoadingSpinner';
 
-function BusinessHours({ hours }) {
-  const days = [
-    'Monday',
-    'Tuesday',
-    'Wednesday',
-    'Thursday',
-    'Friday',
-    'Saturday',
-    'Sunday',
-  ];
-  const today = new Date().getDay();
-  const adjustedDay = today === 0 ? 6 : today - 1;
+// function BusinessHours({ hours }) {
+//   const days = [
+//     'Monday',
+//     'Tuesday',
+//     'Wednesday',
+//     'Thursday',
+//     'Friday',
+//     'Saturday',
+//     'Sunday',
+//   ];
+//   const today = new Date().getDay();
+//   const adjustedDay = today === 0 ? 6 : today - 1;
 
-  return (
-    <View style={styles.hoursContainer}>
-      {days.map((day, index) => (
-        <View
-          key={day}
-          style={[styles.hourRow, adjustedDay === index && styles.todayRow]}
-        >
-          <Text
-            style={[styles.dayText, adjustedDay === index && styles.todayText]}
-          >
-            {day}
-          </Text>
-          <Text
-            style={[styles.timeText, adjustedDay === index && styles.todayText]}
-          >
-            {hours?.[day.toLowerCase()] || 'Closed'}
-          </Text>
-        </View>
-      ))}
-    </View>
-  );
-}
+//   return (
+//     <View style={styles.hoursContainer}>
+//       {days.map((day, index) => (
+//         <View
+//           key={day}
+//           style={[styles.hourRow, adjustedDay === index && styles.todayRow]}
+//         >
+//           <Text
+//             style={[styles.dayText, adjustedDay === index && styles.todayText]}
+//           >
+//             {day}
+//           </Text>
+//           <Text
+//             style={[styles.timeText, adjustedDay === index && styles.todayText]}
+//           >
+//             {hours?.[day.toLowerCase()] || 'Closed'}
+//           </Text>
+//         </View>
+//       ))}
+//     </View>
+//   );
+// }
 
 function StoreList({ stores, onEditStore }) {
   if (!stores || stores.length === 0) {
@@ -210,11 +210,11 @@ export default function MallDetail() {
           animationType="slide"
           onRequestClose={() => setShowStoreModal(false)}
         >
-          <StoreManagement
+          {/* <StoreManagement
             mallId={id}
             initialStore={selectedStore}
             onClose={() => setShowStoreModal(false)}
-          />
+          /> */}
         </Modal>
       </SafeAreaView>
     </ErrorBoundary>

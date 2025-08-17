@@ -1,294 +1,264 @@
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
-  ScrollView,
   StyleSheet,
-  Pressable,
-  Switch,
-  Modal,
   TextInput,
+  Pressable,
+  ScrollView,
+  Switch,
+  ActivityIndicator,
   Alert,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Stack } from 'expo-router';
+import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useState } from 'react';
-import { Colors } from '../constants/Colors';
-import { useSettings } from '../context/settings/SettingsContext';
-import {
-  updateNotifications,
-  updateLocationSettings,
-  updateLanguage,
-  updateUserProfile,
-} from '../context/actions';
-import { createBackup, restoreBackup } from '../utils/backup';
+import { useColorScheme } from '../hooks/useColorScheme';
+import { useUser } from '../../smartcart/context/UserContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-const LANGUAGES = [
-  { code: 'en', name: 'English' },
-  { code: 'fr', name: 'French' },
-  { code: 'es', name: 'Spanish' },
-  { code: 'yo', name: 'Yoruba' },
-  { code: 'ha', name: 'Hausa' },
-  { code: 'ig', name: 'Igbo' },
-];
-
-export default function Profile() {
-  const { state, dispatch } = useSettings();
+export default function ProfileScreen() {
+  const { colors } = useColorScheme();
+  const router = useRouter();
+  const { user, isLoading, updateUserProfile, logout } = useUser();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [isEditing, setIsEditing] = useState(false);
-  const [showLanguagePicker, setShowLanguagePicker] = useState(false);
-  const [editedProfile, setEditedProfile] = useState(state.userProfile);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSettingToggle = (category, setting) => {
-    if (category === 'notifications') {
-      dispatch(
-        updateNotifications({
-          [setting]: !state.notifications[setting],
-        })
-      );
-    } else if (category === 'location') {
-      dispatch(
-        updateLocationSettings({
-          [setting]: !state.location[setting],
-        })
-      );
+  useEffect(() => {
+    if (user) {
+      setName(user.displayName || '');
+      setEmail(user.email || ''); // Firebase user object has displayName
     }
-  };
+  }, [user]);
 
-  const handleSaveProfile = () => {
-    dispatch(updateUserProfile(editedProfile));
-    setIsEditing(false);
-  };
+  const handleSave = useCallback(async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
 
-  const handleLanguageSelect = (langCode) => {
-    dispatch(updateLanguage(langCode));
-    setShowLanguagePicker(false);
-  };
-
-  const handleCreateBackup = async () => {
-    const success = await createBackup();
-    if (success) {
-      Alert.alert('Success', 'Backup created successfully');
-    } else {
-      Alert.alert('Error', 'Failed to create backup');
-    }
-  };
-
-  const handleRestoreBackup = async () => {
     try {
-      Alert.alert(
-        'Restore Backup',
-        'This feature will allow you to select a backup file to restore your data.',
-        [{ text: 'OK' }]
-      );
+      await updateUserProfile({
+        displayName: name,
+        // Note: Updating email with Firebase Auth requires re-authentication.
+      });
+      setIsEditing(false);
+      Alert.alert('Profile Updated', 'Your information has been saved.');
+    } catch (err) {
+      Alert.alert('Error', 'Failed to update profile: ' + err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }, [name, user, updateUserProfile, isSubmitting]);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      // Auth state listener in UserContext will handle navigation
     } catch (error) {
-      Alert.alert('Error', 'Failed to restore backup');
+      Alert.alert('Logout Failed', error.message);
     }
   };
+
+
+  if (!user && !isLoading) {
+    return (
+      <SafeAreaView
+        style={[
+          styles.container,
+          {
+            backgroundColor: colors.background,
+            justifyContent: 'center',
+            alignItems: 'center',
+          },
+        ]}
+      >
+        <Text
+          style={{
+            color: colors.text.secondary,
+            textAlign: 'center',
+            paddingHorizontal: 40,
+          }}
+        >
+          Could not load user data. Please ensure the app is configured
+          correctly and you are logged in.
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          { justifyContent: 'center', alignItems: 'center' },
+        ]}
+      >
+        <ActivityIndicator size="large" color={colors.primary} />
+      </View>
+    );
+  }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       <Stack.Screen
         options={{
           title: 'Profile',
           headerRight: () => (
             <Pressable
-              onPress={() =>
-                isEditing ? handleSaveProfile() : setIsEditing(true)
-              }
-              style={styles.editButton}
+              onPress={() => (isEditing ? handleSave() : setIsEditing(true))}
+              style={styles.headerButton}
+              disabled={isSubmitting}
             >
-              <Text style={styles.editButtonText}>
-                {isEditing ? 'Save' : 'Edit'}
+              <Text
+                style={[styles.headerButtonText, { color: colors.primary }]}
+              >
+                {isEditing ? (isSubmitting ? 'Saving...' : 'Save') : 'Edit'}
               </Text>
             </Pressable>
           ),
         }}
       />
-
-      <ScrollView style={styles.content}>
+      <ScrollView
+        style={styles.content}
+        contentContainerStyle={{ paddingBottom: 40 }}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Profile Header */}
-        <View style={styles.header}>
+        <View style={[styles.header, { backgroundColor: colors.surface }]}>
           <View style={styles.avatarContainer}>
-            <View style={styles.avatarPlaceholder}>
-              <Ionicons name="person" size={40} color={Colors.text.inverse} />
+            <View
+              style={[
+                styles.avatarPlaceholder,
+                { backgroundColor: colors.primary },
+              ]}
+            >
+              <Ionicons name="person" size={40} color={colors.text.inverse} />
             </View>
-            {isEditing && (
-              <Pressable style={styles.changeAvatarButton}>
-                <Text style={styles.changeAvatarText}>Change Photo</Text>
-              </Pressable>
-            )}
           </View>
 
           {isEditing ? (
             <View style={styles.editForm}>
               <TextInput
-                style={styles.input}
-                value={editedProfile.name}
-                onChangeText={(text) =>
-                  setEditedProfile((prev) => ({ ...prev, name: text }))
-                }
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.background,
+                    color: colors.text.primary,
+                    borderColor: colors.border,
+                  },
+                ]}
+                value={name}
+                onChangeText={setName}
                 placeholder="Full Name"
+                placeholderTextColor={colors.text.secondary}
               />
               <TextInput
-                style={styles.input}
-                value={editedProfile.email}
-                onChangeText={(text) =>
-                  setEditedProfile((prev) => ({ ...prev, email: text }))
-                }
+                style={[
+                  styles.input,
+                  {
+                    backgroundColor: colors.background,
+                    color: colors.text.primary,
+                    borderColor: colors.border,
+                  },
+                ]}
+                value={email}
+                onChangeText={setEmail}
                 placeholder="Email"
                 keyboardType="email-address"
-              />
-              <TextInput
-                style={styles.input}
-                value={editedProfile.location}
-                onChangeText={(text) =>
-                  setEditedProfile((prev) => ({ ...prev, location: text }))
-                }
-                placeholder="Location"
+                autoCapitalize="none"
+                placeholderTextColor={colors.text.secondary}
               />
             </View>
           ) : (
-            <>
-              <Text style={styles.name}>{state.userProfile.name}</Text>
-              <Text style={styles.email}>{state.userProfile.email}</Text>
-              <Text style={styles.location}>{state.userProfile.location}</Text>
-            </>
+            <View style={styles.profileInfo}>
+              <Text style={[styles.name, { color: colors.text.primary }]}>
+                {user?.displayName || 'Anonymous User'}
+              </Text>
+              <Text style={[styles.email, { color: colors.text.secondary }]}>
+                {user?.email || 'No email set'}
+              </Text>
+            </View>
           )}
         </View>
 
         {/* Settings Sections */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Notifications</Text>
-          <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Price Alerts</Text>
-            <Switch
-              value={state.notifications.priceAlerts}
-              onValueChange={() =>
-                handleSettingToggle('notifications', 'priceAlerts')
-              }
-              trackColor={{ false: Colors.surface, true: Colors.primary }}
-            />
-          </View>
-          <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Deal Notifications</Text>
-            <Switch
-              value={state.notifications.dealNotifications}
-              onValueChange={() =>
-                handleSettingToggle('notifications', 'dealNotifications')
-              }
-              trackColor={{ false: Colors.surface, true: Colors.primary }}
-            />
-          </View>
-          <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Shopping Reminders</Text>
-            <Switch
-              value={state.notifications.shoppingReminders}
-              onValueChange={() =>
-                handleSettingToggle('notifications', 'shoppingReminders')
-              }
-              trackColor={{ false: Colors.surface, true: Colors.primary }}
-            />
-          </View>
-        </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Location Settings</Text>
-          <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Use Current Location</Text>
-            <Switch
-              value={state.location.useCurrentLocation}
-              onValueChange={() =>
-                handleSettingToggle('location', 'useCurrentLocation')
-              }
-              trackColor={{ false: Colors.surface, true: Colors.primary }}
+          <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+            Data
+          </Text>
+          <Pressable
+            style={[styles.settingItem, { borderBottomColor: colors.border }]}
+            onPress={() =>
+              Alert.alert(
+                'Not Implemented',
+                'Backup functionality coming soon!'
+              )
+            }
+          >
+            <Ionicons
+              name="cloud-upload-outline"
+              size={22}
+              color={colors.text.secondary}
             />
-          </View>
-          <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Save Searched Locations</Text>
-            <Switch
-              value={state.location.saveSearchedLocations}
-              onValueChange={() =>
-                handleSettingToggle('location', 'saveSearchedLocations')
-              }
-              trackColor={{ false: Colors.surface, true: Colors.primary }}
-            />
-          </View>
-        </View>
-
-        <Pressable
-          style={styles.section}
-          onPress={() => setShowLanguagePicker(true)}
-        >
-          <Text style={styles.sectionTitle}>Language</Text>
-          <View style={styles.settingItem}>
-            <Text style={styles.settingLabel}>Selected Language</Text>
-            <Text style={styles.settingValue}>
-              {LANGUAGES.find((lang) => lang.code === state.language)?.name}
+            <Text style={[styles.settingLabel, { flex: 1, marginLeft: 16 }]}>
+              Backup Data
             </Text>
-          </View>
-        </Pressable>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Backup & Restore</Text>
-          <View style={styles.backupContainer}>
-            <Pressable style={styles.backupButton} onPress={handleCreateBackup}>
-              <Ionicons
-                name="cloud-upload-outline"
-                size={24}
-                color={Colors.text.inverse}
-              />
-              <Text style={styles.backupButtonText}>Create Backup</Text>
-            </Pressable>
-            <Pressable
-              style={[styles.backupButton, styles.restoreButton]}
-              onPress={handleRestoreBackup}
-            >
-              <Ionicons
-                name="cloud-download-outline"
-                size={24}
-                color={Colors.text.inverse}
-              />
-              <Text style={styles.backupButtonText}>Restore Backup</Text>
-            </Pressable>
-          </View>
+            <Ionicons
+              name="chevron-forward"
+              size={22}
+              color={colors.text.secondary}
+            />
+          </Pressable>
+          <Pressable
+            style={[styles.settingItem, { borderBottomWidth: 0 }]}
+            onPress={() =>
+              Alert.alert(
+                'Not Implemented',
+                'Restore functionality coming soon!'
+              )
+            }
+          >
+            <Ionicons
+              name="cloud-download-outline"
+              size={22}
+              color={colors.text.secondary}
+            />
+            <Text style={[styles.settingLabel, { flex: 1, marginLeft: 16 }]}>
+              Restore Data
+            </Text>
+            <Ionicons
+              name="chevron-forward"
+              size={22}
+              color={colors.text.secondary}
+            />
+          </Pressable>
         </View>
 
-        {/* Language Picker Modal */}
-        <Modal
-          visible={showLanguagePicker}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={() => setShowLanguagePicker(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Select Language</Text>
-              {LANGUAGES.map((lang) => (
-                <Pressable
-                  key={lang.code}
-                  style={styles.languageOption}
-                  onPress={() => handleLanguageSelect(lang.code)}
-                >
-                  <Text
-                    style={[
-                      styles.languageOptionText,
-                      state.language === lang.code &&
-                        styles.selectedLanguageText,
-                    ]}
-                  >
-                    {lang.name}
-                  </Text>
-                </Pressable>
-              ))}
-              <Pressable
-                style={styles.closeButton}
-                onPress={() => setShowLanguagePicker(false)}
-              >
-                <Text style={styles.closeButtonText}>Close</Text>
-              </Pressable>
-            </View>
-          </View>
-        </Modal>
+        {/* Logout Button */}
+        <View style={styles.section}>
+          <Pressable
+            style={[styles.settingItem, { borderBottomWidth: 0 }]}
+            onPress={handleLogout}
+          >
+            <Ionicons
+              name="log-out-outline"
+              size={22}
+              color={colors.danger || '#FF3B30'}
+            />
+            <Text style={[styles.settingLabel, { flex: 1, marginLeft: 16, color: colors.danger || '#FF3B30' }]}>
+              Logout
+            </Text>
+            <Ionicons
+              name="chevron-forward"
+              size={22}
+              color={colors.danger || '#FF3B30'}
+            />
+          </Pressable>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -297,15 +267,14 @@ export default function Profile() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: Colors.background,
   },
   content: {
     flex: 1,
   },
   header: {
     alignItems: 'center',
-    padding: 20,
-    backgroundColor: Colors.surface,
+    paddingVertical: 20,
+    paddingHorizontal: 16,
   },
   avatarContainer: {
     alignItems: 'center',
@@ -315,145 +284,53 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: Colors.primary,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 8,
   },
-  changeAvatarButton: {
-    padding: 8,
-  },
-  changeAvatarText: {
-    color: Colors.primary,
-    fontSize: 14,
-    fontWeight: '600',
+  profileInfo: {
+    alignItems: 'center',
   },
   name: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
-    color: Colors.text.primary,
     marginBottom: 4,
   },
   email: {
     fontSize: 16,
-    color: Colors.text.secondary,
-    marginBottom: 4,
-  },
-  location: {
-    fontSize: 16,
-    color: Colors.text.secondary,
   },
   editForm: {
     width: '100%',
     gap: 12,
   },
   input: {
-    backgroundColor: Colors.background,
-    padding: 12,
-    borderRadius: 8,
-    width: '100%',
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
     fontSize: 16,
-    color: Colors.text.primary,
   },
   section: {
-    marginTop: 16,
-    padding: 16,
-    backgroundColor: Colors.surface,
+    marginTop: 24,
+    paddingHorizontal: 16,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: Colors.text.primary,
-    marginBottom: 16,
+    marginBottom: 8,
   },
   settingItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 16,
     borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.accent + '20',
   },
   settingLabel: {
     fontSize: 16,
-    color: Colors.text.primary,
   },
-  settingValue: {
-    fontSize: 16,
-    color: Colors.primary,
-  },
-  editButton: {
+  headerButton: {
     paddingHorizontal: 16,
   },
-  editButtonText: {
-    color: Colors.primary,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: Colors.background,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    padding: 16,
-    maxHeight: '70%',
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: Colors.text.primary,
-    marginBottom: 16,
-    textAlign: 'center',
-  },
-  languageOption: {
-    padding: 16,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: Colors.accent + '20',
-  },
-  languageOptionText: {
-    fontSize: 16,
-    color: Colors.text.primary,
-  },
-  selectedLanguageText: {
-    color: Colors.primary,
-    fontWeight: '600',
-  },
-  closeButton: {
-    marginTop: 16,
-    padding: 16,
-    backgroundColor: Colors.primary,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  closeButtonText: {
-    color: Colors.text.inverse,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  backupContainer: {
-    flexDirection: 'row',
-    gap: 16,
-    marginTop: 8,
-  },
-  backupButton: {
-    flex: 1,
-    backgroundColor: Colors.primary,
-    padding: 16,
-    borderRadius: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-  },
-  restoreButton: {
-    backgroundColor: Colors.secondary,
-  },
-  backupButtonText: {
-    color: Colors.text.inverse,
+  headerButtonText: {
     fontSize: 16,
     fontWeight: '600',
   },

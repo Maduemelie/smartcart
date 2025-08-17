@@ -19,7 +19,7 @@
       "package": "com.maduemelie.smartcart",
       "config": {
         "googleMaps": {
-          "apiKey": "AIzaSyC7MorMCgjxvN7r2nKdwWJARtxWKm8fdmg"
+          "apiKey": "AIzaSyC1jgqM-Gfss8uXKgmbI9qHH1HLD2ZqV08"
         }
       },
       "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"]

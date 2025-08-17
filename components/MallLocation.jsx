@@ -13,15 +13,22 @@ import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker } from 'react-native-maps';
 import { Colors } from '../constants/Colors';
 import { useColorScheme } from '../hooks/useColorScheme';
-
-const { width } = Dimensions.get('window');
-const ASPECT_RATIO = width / 200;
+import { calculateDistance } from '../utils/location';
 
 export function MallLocation({ mall }) {
+  console.log('MallLocation component rendered with mall:', mall);
+  console.log('Mall coordinates:', mall?.coordinates);
+  console.log(
+    'Has coordinates:',
+    !!(mall?.coordinates?.latitude && mall?.coordinates?.longitude)
+  );
   const { colors } = useColorScheme();
   const [userLocation, setUserLocation] = useState(null);
   const [distance, setDistance] = useState(null);
   const [error, setError] = useState(null);
+
+  // Use mall.location as a fallback if mall.address is not available
+  const addressToUse = mall.address || mall.coordinates || 'No address set';
 
   useEffect(() => {
     (async () => {
@@ -51,51 +58,44 @@ export function MallLocation({ mall }) {
     })();
   }, [mall]);
 
-  const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    if (!lat1 || !lon1 || !lat2 || !lon2) return null;
-
-    const R = 6371; // Earth's radius in kilometers
-    const dLat = deg2rad(lat2 - lat1);
-    const dLon = deg2rad(lon2 - lon1);
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(deg2rad(lat1)) *
-        Math.cos(deg2rad(lat2)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return (R * c).toFixed(1);
-  };
-
-  const deg2rad = (deg) => deg * (Math.PI / 180);
-
   const handleNavigate = () => {
-    if (!mall.coordinates && !mall.address) {
+    const hasCoordinates =
+      mall.coordinates &&
+      mall.coordinates.latitude &&
+      mall.coordinates.longitude;
+    const hasAddress = mall.address || null;
+
+    if (!hasCoordinates && !hasAddress) {
       setError('No location information available');
       return;
     }
 
     let url;
-    if (mall.coordinates) {
+    if (hasCoordinates) {
+      // Use coordinates for precise navigation
       const scheme = Platform.select({
         ios: 'maps:',
         android: 'geo:',
       });
       const latLng = `${mall.coordinates.latitude},${mall.coordinates.longitude}`;
-      const label = encodeURIComponent(mall.name);
+      const label = encodeURIComponent(mall.address);
       url = Platform.select({
         ios: `${scheme}${latLng}?q=${label}`,
         android: `${scheme}${latLng}?q=${label}`,
       });
     } else {
-      const query = encodeURIComponent(`${mall.name} ${mall.address}`);
+      // Use only the address without store name to avoid generic chain results
+      const addressOnly = addressToUse.replace(mall.name, '').trim();
+      const query = encodeURIComponent(addressOnly || addressToUse);
       url = Platform.select({
         ios: `maps://app?q=${query}`,
         android: `geo:0,0?q=${query}`,
       });
     }
 
-    Linking.openURL(url).catch(() => {
+    console.log('Navigation URL:', url);
+    Linking.openURL(url).catch((error) => {
+      console.error('Navigation error:', error);
       setError('Could not open maps application');
     });
   };
@@ -109,42 +109,107 @@ export function MallLocation({ mall }) {
       }
     : null;
 
+  console.log('Initial region:', initialRegion);
+
   return (
     <View style={[styles.container, { backgroundColor: colors.surface }]}>
-      {initialRegion && (
+      {/* Map Section */}
+      {initialRegion ? (
         <View style={styles.mapContainer}>
           <MapView
             style={styles.map}
             initialRegion={initialRegion}
             scrollEnabled={false}
             zoomEnabled={false}
+            showsUserLocation={true}
+            showsMyLocationButton={false}
           >
             <Marker
               coordinate={mall.coordinates}
               title={mall.name}
               description={mall.address}
-            />
+            >
+              <View style={styles.customMarker}>
+                <Ionicons name="storefront" size={20} color={Colors.primary} />
+              </View>
+            </Marker>
           </MapView>
+        </View>
+      ) : (
+        /* Fallback when no coordinates */
+        <View
+          style={[
+            styles.mapContainer,
+            styles.noMapContainer,
+            { backgroundColor: colors.background },
+          ]}
+        >
+          <View style={styles.noMapContent}>
+            <Ionicons
+              name="map-outline"
+              size={48}
+              color={colors.text.secondary}
+            />
+            <Text style={[styles.noMapText, { color: colors.text.secondary }]}>
+              Map unavailable
+            </Text>
+            <Text
+              style={[styles.noMapSubtext, { color: colors.text.secondary }]}
+            >
+              {mall.address
+                ? 'Location not precisely mapped'
+                : 'No address provided'}
+            </Text>
+          </View>
         </View>
       )}
 
+      {/* Address Section */}
       <View style={styles.addressContainer}>
-        <Ionicons name="location" size={20} color={Colors.primary} />
-        <Text style={[styles.address, { color: colors.text.primary }]}>
-          {mall.address || 'No address set'}
-        </Text>
+        <View style={styles.locationIconContainer}>
+          <Ionicons
+            name={initialRegion ? 'location' : 'location-outline'}
+            size={20}
+            color={initialRegion ? Colors.primary : colors.text.secondary}
+          />
+        </View>
+        <View style={styles.addressContent}>
+          <Text style={[styles.address, { color: colors.text.primary }]}>
+            {mall.address || 'No address set'}
+          </Text>
+          {!initialRegion && mall.address && (
+            <Text
+              style={[styles.addressNote, { color: colors.text.secondary }]}
+            >
+              Use Google Places autocomplete when adding stores for precise
+              mapping
+            </Text>
+          )}
+        </View>
       </View>
 
+      {/* Distance Section */}
       {distance && (
-        <Text style={[styles.distance, { color: colors.text.secondary }]}>
-          {distance} km away
-        </Text>
+        <View style={styles.distanceContainer}>
+          <Ionicons name="navigate-outline" size={16} color={colors.primary} />
+          <Text style={[styles.distance, { color: colors.text.secondary }]}>
+            {distance} km away
+          </Text>
+        </View>
       )}
 
+      {/* Action Section */}
       {error ? (
-        <Text style={[styles.error, { color: Colors.error.main }]}>
-          {error}
-        </Text>
+        <View style={styles.errorContainer}>
+          <Ionicons
+            name="warning-outline"
+            size={20}
+            color={Colors.error.main}
+          />
+          <Text style={[styles.error, { color: Colors.error.main }]}>
+            {error}
+          </Text>
+        </View>
       ) : (
         <Pressable
           style={[styles.navigateButton, { backgroundColor: Colors.primary }]}
@@ -152,7 +217,7 @@ export function MallLocation({ mall }) {
         >
           <Ionicons name="navigate" size={20} color={Colors.text.inverse} />
           <Text style={[styles.navigationText, { color: Colors.text.inverse }]}>
-            Navigate
+            {initialRegion ? 'Navigate to Store' : 'Search Address'}
           </Text>
         </Pressable>
       )}
@@ -162,32 +227,87 @@ export function MallLocation({ mall }) {
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
   },
   mapContainer: {
     height: 200,
-    borderRadius: 12,
+    borderRadius: 16,
     overflow: 'hidden',
   },
   map: {
     width: '100%',
     height: '100%',
   },
+  customMarker: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 8,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  noMapContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(0,0,0,0.1)',
+    borderStyle: 'dashed',
+  },
+  noMapContent: {
+    alignItems: 'center',
+    paddingVertical: 20,
+  },
+  noMapText: {
+    fontSize: 16,
+    fontWeight: '600',
+    marginTop: 12,
+    marginBottom: 4,
+  },
+  noMapSubtext: {
+    fontSize: 12,
+    textAlign: 'center',
+    paddingHorizontal: 20,
+  },
   addressContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     padding: 16,
-    gap: 8,
+    gap: 12,
+  },
+  locationIconContainer: {
+    marginTop: 2,
+  },
+  addressContent: {
+    flex: 1,
   },
   address: {
-    flex: 1,
     fontSize: 16,
+    lineHeight: 22,
+    marginBottom: 4,
+  },
+  addressNote: {
+    fontSize: 12,
+    lineHeight: 16,
+    fontStyle: 'italic',
+  },
+  distanceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+    gap: 6,
   },
   distance: {
     fontSize: 14,
-    paddingHorizontal: 16,
-    paddingBottom: 12,
+    fontWeight: '500',
   },
   navigateButton: {
     flexDirection: 'row',
@@ -195,14 +315,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: 16,
     gap: 8,
+    margin: 12,
+    borderRadius: 12,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
   },
   navigationText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
+  },
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    gap: 8,
   },
   error: {
     fontSize: 14,
-    textAlign: 'center',
-    padding: 16,
+    fontWeight: '500',
   },
 });
