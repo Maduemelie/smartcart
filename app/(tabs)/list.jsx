@@ -3,11 +3,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { FlashList } from '@shopify/flash-list';
-import { useColorScheme } from '../hooks/useColorScheme';
-import { useList } from '../context/list/ListContext';
+import { useColorScheme } from '../../hooks/useColorScheme';
+import { useList } from '../../context/list/ListContext';
 import { useState, useCallback, memo, useEffect } from 'react';
-import { ErrorBoundary } from '../components/ErrorBoundary';
-import { LoadingSpinner } from '../components/LoadingSpinner';
+import { ErrorBoundary } from '../../components/ErrorBoundary';
+import { LoadingSpinner } from '../../components/LoadingSpinner';
 
 // Memoized ListItem component for better performance
 const ListItem = memo(({ list, onDelete }) => {

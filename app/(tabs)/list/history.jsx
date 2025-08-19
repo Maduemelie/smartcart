@@ -1,8 +1,8 @@
 import React from 'react';
 import { View, Text, StyleSheet, FlatList } from 'react-native';
-import { useList } from '../../context/list/ListContext';
-import { useMall } from '../../context/mall/MallContext';
-import { useColorScheme } from '../../hooks/useColorScheme';
+import { useList } from '../../../context/list/ListContext';
+import { useMall } from '../../../context/mall/MallContext';
+import { useColorScheme } from '../../../hooks/useColorScheme';
 
 export default function History() {
   const { state } = useList();

@@ -1,6 +1,6 @@
 import 'react-native-get-random-values';
 import React from 'react';
-import { Stack, router, Redirect } from 'expo-router';
+import { Stack } from 'expo-router';
 import Toast from 'react-native-toast-message';
 import { useEffect, useState } from 'react';
 import { View, Alert } from 'react-native';
@@ -8,7 +8,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { ColorSchemeContext } from '../constants/Colors';
 import { useColorScheme } from '../hooks/useColorScheme';
 import BottomTabs from '../components/BottomTabs';
-import { UserProvider, useUser } from '@/context/UserContext';
+import { UserProvider, useUser } from '../context/UserContext';
 import { ListProvider } from '../context/list/ListContext';
 import { MallProvider } from '../context/mall/MallContext';
 import { PriceProvider } from '../context/PriceContext';
@@ -22,62 +22,7 @@ import SyncManager from '../utils/sync';
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  return (
-    <UserProvider>
-      <SettingsProvider>
-        <ActivityProvider>
-          <ListProvider>
-            <MallProvider>
-              <PriceProvider>
-                <Stack>
-                  <Stack.Screen name="index" options={{ headerShown: false }} />
-                  <Stack.Screen name="login" options={{ headerShown: false }} />
-                  <Stack.Screen
-                    name="signup"
-                    options={{ headerShown: false }}
-                  />
-                  <Stack.Screen name="profile" options={{ title: 'Profile' }} />
-                  <Stack.Screen
-                    name="list"
-                    options={{ title: 'Shopping Lists' }}
-                  />
-                  <Stack.Screen
-                    name="list/[id]"
-                    options={{ title: 'List Details' }}
-                  />
-                  <Stack.Screen
-                    name="list/newList"
-                    options={{ title: 'New List' }}
-                  />
-                  <Stack.Screen
-                    name="list/history"
-                    options={{ title: 'Purchase History' }}
-                  />
-                  <Stack.Screen name="malls" options={{ title: 'Stores' }} />
-                  <Stack.Screen
-                    name="mall/[id]"
-                    options={{ title: 'Store Details' }}
-                  />
-                  <Stack.Screen
-                    name="mall/new"
-                    options={{ title: 'Add New Store' }}
-                  />
-                  <Stack.Screen
-                    name="mall/edit"
-                    options={{ title: 'Edit Store' }}
-                  />
-                  <Stack.Screen
-                    name="compare"
-                    options={{ title: 'Price Comparison' }}
-                  />
-                </Stack>
-              </PriceProvider>
-            </MallProvider>
-          </ListProvider>
-        </ActivityProvider>
-      </SettingsProvider>
-    </UserProvider>
-  );
+  return <AppProviders />;
 }
 
 function AppProviders() {
@@ -136,39 +81,7 @@ function AppProviders() {
             <ListProvider initialState={initialState?.lists}>
               <MallProvider initialState={initialState?.malls}>
                 <PriceProvider>
-                  <View style={{ flex: 1 }}>
-                    <Stack
-                      screenOptions={{
-                        headerStyle: {
-                          backgroundColor: colors.background,
-                        },
-                        headerTintColor: colors.text.primary,
-                        headerTitleStyle: {
-                          color: colors.text.primary,
-                          fontWeight: 'bold',
-                        },
-                        contentStyle: {
-                          backgroundColor: colors.background,
-                        },
-                      }}
-                    >
-                      {/* This will render screens from (app) or (auth) group */}
-                      <Stack.Screen
-                        name="(app)"
-                        options={{ headerShown: false }}
-                      />
-                      <Stack.Screen
-                        name="login"
-                        options={{ headerShown: false, presentation: 'modal' }}
-                      />
-                      <Stack.Screen
-                        name="signup"
-                        options={{ headerShown: false, presentation: 'modal' }}
-                      />
-                    </Stack>
-                    {/* We only show BottomTabs if the user is authenticated */}
-                    <RootLayoutNav />
-                  </View>
+                  <AppNavigator />
                   <Toast />
                 </PriceProvider>
               </MallProvider>
@@ -180,26 +93,57 @@ function AppProviders() {
   );
 }
 
-function RootLayoutNav() {
+function AppNavigator() {
   const { user, isLoading } = useUser();
 
   if (isLoading) {
     return <LoadingSpinner message="Authenticating..." />;
   }
 
-  if (user) {
-    return (
-      <>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <BottomTabs />
-      </>
-    );
-  }
-
+  // For authenticated users, we show the tab layout which includes bottom tabs
+  // For unauthenticated users, we show the auth screens
   return (
-    <>
-      <Stack.Screen name="login" options={{ headerShown: false }} />
-      <Stack.Screen name="signup" options={{ headerShown: false }} />
-    </>
+    <Stack
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
+      {user ? (
+        <>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen
+            name="list/[id]"
+            options={{ title: 'List Details', presentation: 'modal' }}
+          />
+          <Stack.Screen
+            name="list/newList"
+            options={{ title: 'New List', presentation: 'modal' }}
+          />
+          <Stack.Screen
+            name="list/history"
+            options={{ title: 'Purchase History' }}
+          />
+          <Stack.Screen
+            name="mall/[id]"
+            options={{ title: 'Store Details' }}
+          />
+          <Stack.Screen
+            name="mall/new"
+            options={{ title: 'Add New Store', presentation: 'modal' }}
+          />
+          <Stack.Screen
+            name="mall/edit"
+            options={{ title: 'Edit Store' }}
+          />
+        </>
+      ) : (
+        <>
+          <Stack.Screen
+            name="(auth)"
+            options={{ headerShown: false }}
+          />
+        </>
+      )}
+    </Stack>
   );
 }

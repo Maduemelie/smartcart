@@ -2,9 +2,9 @@ import { View, Text, ScrollView, StyleSheet, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from '../hooks/useColorScheme';
-import { useMall } from '../context/mall/MallContext';
-import PriceChart from '../components/PriceChart';
+import { useColorScheme } from '../../hooks/useColorScheme';
+import { useMall } from '../../context/mall/MallContext';
+import PriceChart from '../../components/PriceChart';
 import { useState } from 'react';
 
 export default function Compare() {

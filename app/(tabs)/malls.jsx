@@ -11,10 +11,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect, useCallback } from 'react';
 import * as Location from 'expo-location';
-import { useColorScheme } from '../hooks/useColorScheme';
-import { useMall } from '../context/mall/MallContext';
-import { setMallFavorite } from '../context/actions';
-import { calculateDistance } from '../utils/location';
+import { useColorScheme } from '../../hooks/useColorScheme';
+import { useMall } from '../../context/mall/MallContext';
+import { setMallFavorite } from '../../context/actions';
+import { calculateDistance } from '../../utils/location';
 
 // Store category icons mapping
 const categoryIcons = {

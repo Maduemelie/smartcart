@@ -10,13 +10,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { useMall } from '../../context/mall/MallContext';
-import { MallLocation } from '../../components/MallLocation';
-import { OperatingHours } from '../../components/OperatingHours';
+import { useMall } from '../../../context/mall/MallContext';
+import { MallLocation } from '../../../components/MallLocation';
+import { OperatingHours } from '../../../components/OperatingHours';
 // import { StoreManagement } from '../../components/StoreManagement';
-import { Colors } from '../../constants/Colors';
-import { ErrorBoundary } from '../../components/ErrorBoundary';
-import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { Colors } from '../../../constants/Colors';
+import { ErrorBoundary } from '../../../components/ErrorBoundary';
+import { LoadingSpinner } from '../../../components/LoadingSpinner';
 
 // function BusinessHours({ hours }) {
 //   const days = [

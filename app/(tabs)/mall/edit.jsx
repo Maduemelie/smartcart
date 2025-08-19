@@ -11,11 +11,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
-import { useColorScheme } from '../../hooks/useColorScheme';
-import { useMall } from '../../context/mall/MallContext';
-import { updateMall } from '../../context/actions';
-import { OperatingHours } from '../../components/OperatingHours';
+import { Colors } from '../../../constants/Colors';
+import { useColorScheme } from '../../../hooks/useColorScheme';
+import { useMall } from '../../../context/mall/MallContext';
+import { updateMall } from '../../../context/actions';
+import { OperatingHours } from '../../../components/OperatingHours';
 
 export default function EditMall() {
   const { colors } = useColorScheme();

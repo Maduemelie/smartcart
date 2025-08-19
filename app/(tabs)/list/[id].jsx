@@ -12,16 +12,16 @@ import {
 } from 'react-native';
 import { useRouter, useLocalSearchParams, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useList } from '../../context/list/ListContext';
-import { useMall } from '../../context/mall/MallContext';
-import { useColorScheme } from '../../hooks/useColorScheme';
-import { QuickAddModal } from '../../components/list/QuickAddModal';
-import { EditItemModal } from '../../components/list/EditItemModal';
-import { SelectStoreModal } from '../../components/list/SelectStoreModal';
-import { ShoppingItem } from '../../components/list/ShoppingItem';
-import { PurchasedItem } from '../../components/list/PurchasedItem';
-import { useStoreRecommendation } from '../../hooks/useStoreRecommendation';
-import { RecommendationBanner } from '../../components/list/RecommendationBanner';
+import { useList } from '../../../context/list/ListContext';
+import { useMall } from '../../../context/mall/MallContext';
+import { useColorScheme } from '../../../hooks/useColorScheme';
+import { QuickAddModal } from '../../../components/list/QuickAddModal';
+import { EditItemModal } from '../../../components/list/EditItemModal';
+import { SelectStoreModal } from '../../../components/list/SelectStoreModal';
+import { ShoppingItem } from '../../../components/list/ShoppingItem';
+import { PurchasedItem } from '../../../components/list/PurchasedItem';
+import { useStoreRecommendation } from '../../../hooks/useStoreRecommendation';
+import { RecommendationBanner } from '../../../components/list/RecommendationBanner';
 
 export default function ListDetailScreen() {
   const router = useRouter();

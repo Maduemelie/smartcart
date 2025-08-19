@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
@@ -11,43 +11,54 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useUser } from '../context/UserContext';
-import { useColorScheme } from '../hooks/useColorScheme';
+import { useUser } from '../../context/UserContext';
+import { useColorScheme } from '../../hooks/useColorScheme';
 
-export default function LoginScreen() {
+export default function SignupScreen() {
   const router = useRouter();
   const { colors } = useColorScheme();
-  const { login } = useUser();
+  const { signup } = useUser();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = useCallback(async () => {
-    if (!email || !password) {
+  const handleSignup = async () => {
+    if (!email || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Error', 'Password must be at least 6 characters');
       return;
     }
 
     setIsLoading(true);
     try {
-      await login(email, password);
+      await signup(email, password);
       router.replace('/profile');
     } catch (error) {
-      Alert.alert('Authentication Error', error.message);
+      Alert.alert('Signup Error', error.message);
     } finally {
       setIsLoading(false);
     }
-  }, [email, password, login, router]);
+  };
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.formContainer}>
           <Text style={[styles.title, { color: colors.text.primary }]}>
-            Welcome Back
+            Create Account
           </Text>
           <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
-            Sign in to continue
+            Sign up to get started
           </Text>
 
           <View style={styles.inputContainer}>
@@ -81,26 +92,41 @@ export default function LoginScreen() {
               autoCorrect={false}
             />
 
+            <TextInput
+              style={[styles.input, { 
+                backgroundColor: colors.surface,
+                color: colors.text.primary,
+                borderColor: colors.border,
+              }]}
+              placeholder="Confirm Password"
+              placeholderTextColor={colors.text.secondary}
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
             <Pressable
               style={[styles.button, { backgroundColor: colors.primary }]}
-              onPress={handleLogin}
+              onPress={handleSignup}
               disabled={isLoading}
             >
               {isLoading ? (
                 <ActivityIndicator color={colors.text.inverse} />
               ) : (
                 <Text style={[styles.buttonText, { color: colors.text.inverse }]}>
-                  Sign In
+                  Sign Up
                 </Text>
               )}
             </Pressable>
 
             <Pressable
               style={styles.switchMode}
-              onPress={() => router.push('/signup')}
+              onPress={() => router.push('/login')}
             >
               <Text style={[styles.switchModeText, { color: colors.primary }]}>
-                Don't have an account? Sign Up
+                Already have an account? Sign In
               </Text>
             </Pressable>
           </View>

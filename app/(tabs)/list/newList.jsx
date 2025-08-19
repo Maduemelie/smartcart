@@ -11,8 +11,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { useColorScheme } from '../../hooks/useColorScheme';
-import { useList } from '../../context/list/ListContext';
+import { useColorScheme } from '../../../hooks/useColorScheme';
+import { useList } from '../../../context/list/ListContext';
 
 const generateId = () =>
   `item-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;

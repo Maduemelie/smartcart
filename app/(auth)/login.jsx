@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,54 +11,43 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useUser } from '../context/UserContext';
-import { useColorScheme } from '../hooks/useColorScheme';
+import { useUser } from '../../context/UserContext';
+import { useColorScheme } from '../../hooks/useColorScheme';
 
-export default function SignupScreen() {
+export default function LoginScreen() {
   const router = useRouter();
   const { colors } = useColorScheme();
-  const { signup } = useUser();
+  const { login } = useUser();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSignup = async () => {
-    if (!email || !password || !confirmPassword) {
+  const handleLogin = useCallback(async () => {
+    if (!email || !password) {
       Alert.alert('Error', 'Please fill in all fields');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      Alert.alert('Error', 'Passwords do not match');
-      return;
-    }
-
-    if (password.length < 6) {
-      Alert.alert('Error', 'Password must be at least 6 characters');
       return;
     }
 
     setIsLoading(true);
     try {
-      await signup(email, password);
-      router.replace('/profile');
+      await login(email, password);
+      router.replace('/'); // Redirect to the main tab navigator instead of directly to profile
     } catch (error) {
-      Alert.alert('Signup Error', error.message);
+      Alert.alert('Authentication Error', error.message);
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [email, password, login, router]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.formContainer}>
           <Text style={[styles.title, { color: colors.text.primary }]}>
-            Create Account
+            Welcome Back
           </Text>
           <Text style={[styles.subtitle, { color: colors.text.secondary }]}>
-            Sign up to get started
+            Sign in to continue
           </Text>
 
           <View style={styles.inputContainer}>
@@ -92,41 +81,26 @@ export default function SignupScreen() {
               autoCorrect={false}
             />
 
-            <TextInput
-              style={[styles.input, { 
-                backgroundColor: colors.surface,
-                color: colors.text.primary,
-                borderColor: colors.border,
-              }]}
-              placeholder="Confirm Password"
-              placeholderTextColor={colors.text.secondary}
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-
             <Pressable
               style={[styles.button, { backgroundColor: colors.primary }]}
-              onPress={handleSignup}
+              onPress={handleLogin}
               disabled={isLoading}
             >
               {isLoading ? (
                 <ActivityIndicator color={colors.text.inverse} />
               ) : (
                 <Text style={[styles.buttonText, { color: colors.text.inverse }]}>
-                  Sign Up
+                  Sign In
                 </Text>
               )}
             </Pressable>
 
             <Pressable
               style={styles.switchMode}
-              onPress={() => router.push('/login')}
+              onPress={() => router.push('/signup')}
             >
               <Text style={[styles.switchModeText, { color: colors.primary }]}>
-                Already have an account? Sign In
+                Don't have an account? Sign Up
               </Text>
             </Pressable>
           </View>

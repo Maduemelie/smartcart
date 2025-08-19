@@ -14,12 +14,12 @@ import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { Colors } from '../../constants/Colors';
-import { useColorScheme } from '../../hooks/useColorScheme';
-import { useMall } from '../../context/mall/MallContext';
-import { OperatingHours } from '../../components/OperatingHours';
+import { Colors } from '../../../constants/Colors';
+import { useColorScheme } from '../../../hooks/useColorScheme';
+import { useMall } from '../../../context/mall/MallContext';
+import { OperatingHours } from '../../../components/OperatingHours';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
-import { GOOGLE_MAPS_API_KEY } from '../../constants/env';
+import { GOOGLE_MAPS_API_KEY } from '../../../constants/env';
 
 export default function NewMall() {
   const { colors } = useColorScheme();
@@ -56,14 +56,6 @@ export default function NewMall() {
     hasATM: true,
     wifiAvailable: false,
   });
-  useEffect(() => {
-    console.log('Google Maps API Key loaded:', !!GOOGLE_MAPS_API_KEY);
-
-    console.log(
-      'API Key (first 20 chars):',
-      GOOGLE_MAPS_API_KEY?.substring(0, 20)
-    );
-  }, []);
 
   // Store categories for selection
   const storeCategories = [
@@ -166,7 +158,8 @@ export default function NewMall() {
   };
 
   const isValidUrl = (url) => {
-    const urlRegex = /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
+    const urlRegex =
+      /^(https?:\/\/)?([\da-z\.-]+)\.([a-z\.]{2,6})([\/\w \.-]*)*\/?$/;
     return urlRegex.test(url);
   };
 
@@ -209,24 +202,28 @@ export default function NewMall() {
 
   const handleLocationSelect = (data, details = null) => {
     console.log('Location selected:', { data, details });
-    
+
     try {
       // Extract address from the data object
-      const selectedAddress = data.description || data.structured_formatting?.main_text || data.terms?.[0]?.value || '';
-      
+      const selectedAddress =
+        data.description ||
+        data.structured_formatting?.main_text ||
+        data.terms?.[0]?.value ||
+        '';
+
       console.log('Extracted address:', selectedAddress);
       console.log('Raw coordinates:', details?.geometry?.location);
-      
+
       // Update mall data with selected address
-      const coordinates = details?.geometry?.location 
+      const coordinates = details?.geometry?.location
         ? {
             latitude: details.geometry.location.lat,
             longitude: details.geometry.location.lng,
           }
         : null;
-        
+
       console.log('Converted coordinates:', coordinates);
-        
+
       setMallData((prev) => ({
         ...prev,
         address: selectedAddress,
@@ -237,7 +234,7 @@ export default function NewMall() {
       if (errors.address) {
         setErrors((prev) => ({ ...prev, address: null }));
       }
-      
+
       // Close the modal after selection
       setShowAddressModal(false);
     } catch (error) {

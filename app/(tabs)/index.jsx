@@ -10,18 +10,18 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Stack, router, Redirect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useState, useEffect, useRef } from 'react';
-import QuickAccess from '../components/QuickAccess';
-import { SearchBar } from '../components/SearchBar';
-import { LoadingSpinner } from '../components/LoadingSpinner';
-import { useDataFetching } from '../hooks/useDataFetching';
-import { useMall } from '../context/mall/MallContext';
-import { useList } from '../context/list/ListContext';
-import { Colors } from '../constants/Colors';
-import { useColorScheme } from '../hooks/useColorScheme';
-import { ErrorBoundary } from '../components/ErrorBoundary';
-import { useActivity } from '../context/activity/ActivityContext'; // Add this import
-import { getRecentActivitiesForHome } from '../context/activity/actions'; //
-import { useUser } from '../context/UserContext';
+import QuickAccess from '../../components/QuickAccess';
+import { SearchBar } from '../../components/SearchBar';
+import { LoadingSpinner } from '../../components/LoadingSpinner';
+import { useDataFetching } from '../../hooks/useDataFetching';
+import { useMall } from '../../context/mall/MallContext';
+import { useList } from '../../context/list/ListContext';
+import { Colors } from '../../constants/Colors';
+import { useColorScheme } from '../../hooks/useColorScheme';
+import { ErrorBoundary } from '../../components/ErrorBoundary';
+import { useActivity } from '../../context/activity/ActivityContext'; // Add this import
+import { getRecentActivitiesForHome } from '../../context/activity/actions'; //
+import { useUser } from '../../context/UserContext';
 
 // Quick Stats Component
 function QuickStatsCard({ icon, title, value, color, onPress }) {
@@ -164,6 +164,21 @@ export default function Home() {
   const [refreshing, setRefreshing] = useState(false);
   const initialSyncComplete = useRef(false);
 
+  // Keep the same working useDataFetching pattern
+  const { loading: listsLoading } = useDataFetching(
+    'recent_lists',
+    async () => {
+      // Fetch would happen here in a real app
+      return [];
+    }
+  );
+
+  useEffect(() => {
+    if (!listsLoading && !initialSyncComplete.current) {
+      initialSyncComplete.current = true;
+    }
+  }, [listsLoading]);
+
   // If still loading auth state, show loading indicator
   if (isLoading) {
     return (
@@ -179,21 +194,6 @@ export default function Home() {
   if (!user) {
     return <Redirect href="/login" />;
   }
-
-  // Keep the same working useDataFetching pattern
-  const { loading: listsLoading } = useDataFetching(
-    'recent_lists',
-    async () => {
-      // Fetch would happen here in a real app
-      return [];
-    }
-  );
-
-  useEffect(() => {
-    if (!listsLoading && !initialSyncComplete.current) {
-      initialSyncComplete.current = true;
-    }
-  }, [listsLoading]);
 
   // Get current greeting
   const getCurrentGreeting = () => {
