@@ -14,16 +14,55 @@ import { Stack, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { useColorScheme } from '../../hooks/useColorScheme';
 import { useUser } from '../../context/UserContext';
+import { useList } from '../../context/list/ListContext';
+import { useMall } from '../../context/mall/MallContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import DeleteAccountModal from '../../components/DeleteAccountModal';
 
 export default function ProfileScreen() {
   const { colors } = useColorScheme();
   const router = useRouter();
-  const { user, isLoading, updateUserProfile, logout } = useUser();
+  const { user, isLoading: userLoading, updateUserProfile, logout, deleteUserAccount } = useUser();
+  const { state: listState, isLoading: listsLoading } = useList();
+  const { state: mallState, isLoading: mallsLoading } = useMall();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDeleteModalVisible, setDeleteModalVisible] = useState(false);
+  const [stats, setStats] = useState({
+    lists: 0,
+    stores: 0,
+    items: 0,
+    favoriteStores: 0
+  });
+
+  // Redirect to login if user is logged out
+  useEffect(() => {
+    if (!userLoading && !user) {
+      router.replace('/(auth)/login');
+    }
+  }, [user, userLoading, router]);
+
+  // Calculate stats whenever the data changes
+  useEffect(() => {
+    if (listState.lists && mallState.malls) {
+      // Calculate total items across all lists
+      const totalItems = listState.lists.reduce((total, list) => {
+        return total + (list.items ? list.items.length : 0);
+      }, 0);
+
+      // Count favorite stores
+      const favoriteStores = mallState.malls.filter(mall => mall.isFavorite).length;
+
+      setStats({
+        lists: listState.lists.length,
+        stores: mallState.malls.length,
+        items: totalItems,
+        favoriteStores: favoriteStores
+      });
+    }
+  }, [listState.lists, mallState.malls]);
 
   useEffect(() => {
     if (user) {
@@ -57,38 +96,16 @@ export default function ProfileScreen() {
     }
   };
 
-  if (!user && !isLoading) {
-    return (
-      <SafeAreaView
-        style={[
-          styles.container,
-          {
-            backgroundColor: colors.background,
-            justifyContent: 'center',
-            alignItems: 'center',
-          },
-        ]}
-      >
-        <Text
-          style={{
-            color: colors.text.secondary,
-            textAlign: 'center',
-            paddingHorizontal: 40,
-          }}
-        >
-          Could not load user data. Please ensure the app is configured
-          correctly and you are logged in.
-        </Text>
-      </SafeAreaView>
-    );
-  }
+  const handleDeleteAccount = () => {
+    setDeleteModalVisible(true);
+  };
 
-  if (isLoading) {
+  if (userLoading || listsLoading || mallsLoading || !user) {
     return (
       <View
         style={[
           styles.container,
-          { justifyContent: 'center', alignItems: 'center' },
+          { justifyContent: 'center', alignItems: 'center', backgroundColor: colors.background },
         ]}
       >
         <ActivityIndicator size="large" color={colors.primary} />
@@ -195,7 +212,7 @@ export default function ProfileScreen() {
         <View style={[styles.statsContainer, { backgroundColor: colors.surface }]}>
           <View style={styles.statItem}>
             <Text style={[styles.statNumber, { color: colors.text.primary }]}>
-              12
+              {stats.lists}
             </Text>
             <Text style={[styles.statLabel, { color: colors.text.secondary }]}>
               Lists
@@ -203,7 +220,7 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.statItem}>
             <Text style={[styles.statNumber, { color: colors.text.primary }]}>
-              5
+              {stats.stores}
             </Text>
             <Text style={[styles.statLabel, { color: colors.text.secondary }]}>
               Stores
@@ -211,7 +228,7 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.statItem}>
             <Text style={[styles.statNumber, { color: colors.text.primary }]}>
-              42
+              {stats.items}
             </Text>
             <Text style={[styles.statLabel, { color: colors.text.secondary }]}>
               Items
@@ -287,13 +304,42 @@ export default function ProfileScreen() {
                 color={colors.text.secondary}
               />
             </Pressable>
+            
+            <Pressable
+              style={styles.settingItem}
+              onPress={handleDeleteAccount}
+            >
+              <View style={styles.settingContent}>
+                <View style={[styles.iconContainer, { backgroundColor: '#FF3B3020' }]}>
+                  <Ionicons
+                    name="trash-outline"
+                    size={20}
+                    color="#FF3B30"
+                  />
+                </View>
+                <View>
+                  <Text style={[styles.settingLabel, { color: '#FF3B30' }]}>
+                    Delete Account
+                  </Text>
+                  <Text style={[styles.settingDescription, { color: colors.text.secondary }]}>
+                    Permanently delete your account and data
+                  </Text>
+                </View>
+              </View>
+              <Ionicons
+                name="chevron-forward"
+                size={20}
+                color="#FF3B30"
+              />
+            </Pressable>
           </View>
         </View>
+      
 
-        <View style={styles.sectionContainer}>
-          <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
-            Preferences
-          </Text>
+      <View style={styles.sectionContainer}>
+        <Text style={[styles.sectionTitle, { color: colors.text.primary }]}>
+          Preferences
+        </Text>
           
           <View style={[styles.card, { backgroundColor: colors.surface }]}>
             <Pressable
@@ -354,6 +400,11 @@ export default function ProfileScreen() {
           </View>
         </View>
       </ScrollView>
+      <DeleteAccountModal
+        visible={isDeleteModalVisible}
+        onClose={() => setDeleteModalVisible(false)}
+        onConfirm={deleteUserAccount}
+      />
     </SafeAreaView>
   );
 }

@@ -10,6 +10,10 @@ import {
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
   signOut,
+  EmailAuthProvider,
+  reauthenticateWithCredential,
+  deleteUser,
+  updateProfile,
 } from 'firebase/auth';
 import { auth } from '../firebase';
 
@@ -53,12 +57,36 @@ export const UserProvider = ({ children }) => {
     return signOut(auth);
   }, []);
 
+  const updateUserProfile = useCallback(async (profile) => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("No user is currently signed in.");
+    }
+    await updateProfile(currentUser, profile);
+    // Update the user state with the new display name
+    setUser((prevUser) => ({ ...prevUser, ...profile }));
+  }, []);
+
+  const deleteUserAccount = useCallback(async (password) => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error("No user is currently signed in.");
+    }
+
+    const credential = EmailAuthProvider.credential(currentUser.email, password);
+    await reauthenticateWithCredential(currentUser, credential);
+    await deleteUser(currentUser);
+    await logout();
+  }, []);
+
   const value = {
     user,
     isLoading,
     login,
     signup,
     logout,
+    updateUserProfile,
+    deleteUserAccount,
   };
 
   return <UserContext.Provider value={value}>{children}</UserContext.Provider>;

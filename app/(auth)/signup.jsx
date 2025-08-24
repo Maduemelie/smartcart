@@ -17,14 +17,15 @@ import { useColorScheme } from '../../hooks/useColorScheme';
 export default function SignupScreen() {
   const router = useRouter();
   const { colors } = useColorScheme();
-  const { signup } = useUser();
+  const { signup, updateUserProfile } = useUser();
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSignup = async () => {
-    if (!email || !password || !confirmPassword) {
+    if (!name || !email || !password || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
@@ -41,7 +42,11 @@ export default function SignupScreen() {
 
     setIsLoading(true);
     try {
-      await signup(email, password);
+      const userCredential = await signup(email, password);
+      // Update the user's display name after signup
+      await updateUserProfile({
+        displayName: name,
+      });
       router.replace('/profile');
     } catch (error) {
       Alert.alert('Signup Error', error.message);
@@ -62,6 +67,20 @@ export default function SignupScreen() {
           </Text>
 
           <View style={styles.inputContainer}>
+            <TextInput
+              style={[styles.input, { 
+                backgroundColor: colors.surface,
+                color: colors.text.primary,
+                borderColor: colors.border,
+              }]}
+              placeholder="Full Name"
+              placeholderTextColor={colors.text.secondary}
+              value={name}
+              onChangeText={setName}
+              autoCapitalize="words"
+              autoCorrect={false}
+            />
+
             <TextInput
               style={[styles.input, { 
                 backgroundColor: colors.surface,

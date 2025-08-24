@@ -1,13 +1,11 @@
 import 'react-native-get-random-values';
-import React from 'react';
-import { Stack } from 'expo-router';
+import React, { useEffect, useState } from 'react';
+import { Stack, SplashScreen } from 'expo-router';
 import Toast from 'react-native-toast-message';
-import { useEffect, useState } from 'react';
-import { View, Alert } from 'react-native';
-import * as SplashScreen from 'expo-splash-screen';
+import { Alert } from 'react-native';
+// import * as SplashScreen from 'expo-splash-screen'; // Now imported from expo-router
 import { ColorSchemeContext } from '../constants/Colors';
 import { useColorScheme } from '../hooks/useColorScheme';
-import BottomTabs from '../components/BottomTabs';
 import { UserProvider, useUser } from '../context/UserContext';
 import { ListProvider } from '../context/list/ListContext';
 import { MallProvider } from '../context/mall/MallContext';
@@ -21,16 +19,17 @@ import SyncManager from '../utils/sync';
 
 SplashScreen.preventAutoHideAsync();
 
+// The root layout must be the default export.
+// It's responsible for setting up providers and rendering the navigator.
 export default function RootLayout() {
-  return <AppProviders />;
+  return (
+    <AppProviders>
+      <RootLayoutNav />
+    </AppProviders>
+  );
 }
 
-function AppProviders() {
-  const { colors, colorScheme } = useColorScheme();
-  const [isLoading, setIsLoading] = useState(true);
-  const [initialState, setInitialState] = useState(null);
-  const [initAttempts, setInitAttempts] = useState(0);
-
+function AppProviders({ children }) {
   const initializeApp = async () => {
     try {
       // Load persisted state
@@ -61,15 +60,20 @@ function AppProviders() {
         );
       }
     } finally {
-      setIsLoading(false);
+      setIsAppReady(true);
     }
   };
+
+  const { colors, colorScheme } = useColorScheme();
+  const [isAppReady, setIsAppReady] = useState(false);
+  const [initialState, setInitialState] = useState(null);
+  const [initAttempts, setInitAttempts] = useState(0);
 
   useEffect(() => {
     initializeApp();
   }, [initAttempts]);
 
-  if (isLoading) {
+  if (!isAppReady) {
     return <LoadingSpinner message="Initializing app..." />;
   }
 
@@ -81,8 +85,11 @@ function AppProviders() {
             <ListProvider initialState={initialState?.lists}>
               <MallProvider initialState={initialState?.malls}>
                 <PriceProvider>
-                  <AppNavigator />
-                  <Toast />
+                  {/* The Toast component uses a portal, so it can be a sibling to the navigator */}
+                  <>
+                    {children}
+                    <Toast />
+                  </>
                 </PriceProvider>
               </MallProvider>
             </ListProvider>
@@ -93,56 +100,26 @@ function AppProviders() {
   );
 }
 
-function AppNavigator() {
+function RootLayoutNav() {
   const { user, isLoading } = useUser();
+
+  useEffect(() => {
+    if (!isLoading) {
+      SplashScreen.hideAsync();
+    }
+  }, [isLoading]);
 
   if (isLoading) {
     return <LoadingSpinner message="Authenticating..." />;
   }
 
-  // For authenticated users, we show the tab layout which includes bottom tabs
-  // For unauthenticated users, we show the auth screens
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-      }}
-    >
-      {user ? (
-        <>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen
-            name="list/[id]"
-            options={{ title: 'List Details', presentation: 'modal' }}
-          />
-          <Stack.Screen
-            name="list/newList"
-            options={{ title: 'New List', presentation: 'modal' }}
-          />
-          <Stack.Screen
-            name="list/history"
-            options={{ title: 'Purchase History' }}
-          />
-          <Stack.Screen
-            name="mall/[id]"
-            options={{ title: 'Store Details' }}
-          />
-          <Stack.Screen
-            name="mall/new"
-            options={{ title: 'Add New Store', presentation: 'modal' }}
-          />
-          <Stack.Screen
-            name="mall/edit"
-            options={{ title: 'Edit Store' }}
-          />
-        </>
+    <Stack screenOptions={{ headerShown: false }}>
+      {user ? ( // User is authenticated
+        <Stack.Screen name="(tabs)" />
       ) : (
-        <>
-          <Stack.Screen
-            name="(auth)"
-            options={{ headerShown: false }}
-          />
-        </>
+        // User is not authenticated
+        <Stack.Screen name="(auth)" />
       )}
     </Stack>
   );

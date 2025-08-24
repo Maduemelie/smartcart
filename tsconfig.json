@@ -14,7 +14,6 @@
     "components/SearchBar.jsx",
     "components/QuickAccess.jsx",
     "components/Header.jsx",
-    "components/BottomTabs.jsx",
     "constants/Colors.js",
     "app/_layout.jsx",
     "app/profile.jsx",

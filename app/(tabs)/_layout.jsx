@@ -1,32 +1,84 @@
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
-import { Stack } from 'expo-router';
-import BottomTabs from '../../components/BottomTabs';
+import { Tabs } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
+import { useColorScheme } from '../../hooks/useColorScheme';
 
 export default function TabLayout() {
+  const { colors } = useColorScheme();
+
   return (
-    <View style={styles.container}>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: {
-            backgroundColor: 'transparent',
-          },
+    <Tabs
+      screenOptions={{
+        headerShown: false,
+        tabBarActiveTintColor: colors.primary,
+        tabBarInactiveTintColor: colors.text.secondary,
+        tabBarStyle: {
+          backgroundColor: colors.surface,
+        },
+      }}
+    >
+      {/* Home Tab */}
+      <Tabs.Screen
+        name="index"
+        options={{
+          title: 'Home',
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="home-outline" color={color} size={24} />
+          ),
         }}
-      >
-        <Stack.Screen name="index" options={{ title: 'Home' }} />
-        <Stack.Screen name="compare" options={{ title: 'Compare' }} />
-        <Stack.Screen name="list" options={{ title: 'List' }} />
-        <Stack.Screen name="malls" options={{ title: 'Malls' }} />
-        <Stack.Screen name="profile" options={{ title: 'Profile' }} />
-      </Stack>
-      <BottomTabs />
-    </View>
+      />
+
+      {/* Shopping Lists Tab */}
+      <Tabs.Screen
+        name="list"
+        options={{
+          title: 'Lists',
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="list-outline" color={color} size={24} />
+          ),
+        }}
+      />
+
+      {/* Stores / Malls Tab */}
+      <Tabs.Screen
+        name="malls"
+        options={{
+          title: 'Stores',
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="storefront-outline" color={color} size={24} />
+          ),
+        }}
+      />
+
+      {/* Product Comparison Tab */}
+      <Tabs.Screen
+        name="compare"
+        options={{
+          title: 'Compare',
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="git-compare-outline" color={color} size={24} />
+          ),
+        }}
+      />
+
+      {/* User Profile Tab */}
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Profile',
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="person-outline" color={color} size={24} />
+          ),
+        }}
+      />
+
+      {/* Hidden Tabs */}
+      <Tabs.Screen name="list/history" options={{ href: null }} />
+      <Tabs.Screen name="list/newList" options={{ href: null }} />
+      <Tabs.Screen name="list/[id]" options={{ href: null }} />
+      <Tabs.Screen name="mall/new" options={{ href: null }} />
+      <Tabs.Screen name="mall/edit" options={{ href: null }} />
+      <Tabs.Screen name="mall/[id]" options={{ href: null }} />
+    </Tabs>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});
