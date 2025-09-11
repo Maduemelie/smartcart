@@ -19,7 +19,6 @@ import { useColorScheme } from '../../../hooks/useColorScheme';
 import { useMall } from '../../../context/mall/MallContext';
 import { OperatingHours } from '../../../components/OperatingHours';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
-import { GOOGLE_MAPS_API_KEY } from '../../../constants/env';
 
 export default function NewMall() {
   const { colors } = useColorScheme();
@@ -261,7 +260,7 @@ export default function NewMall() {
   };
 
   useEffect(() => {
-    if (!GOOGLE_MAPS_API_KEY) {
+    if (!process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY) {
       Alert.alert(
         'Configuration Notice',
         'Google Maps API key is not configured. You can still add stores manually by typing the address.',

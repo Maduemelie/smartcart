@@ -30,48 +30,41 @@ export default function RootLayout() {
 }
 
 function AppProviders({ children }) {
-  const initializeApp = async () => {
-    try {
-      // Load persisted state
-      const state = await hydrateState();
-      if (!state && initAttempts < 2) {
-        // If hydration fails, clear data and try again
-        await clearPersistedState();
-        setInitAttempts((prev) => prev + 1);
-        return;
-      }
+  const { colors, colorScheme } = useColorScheme();
+  const [isAppReady, setIsAppReady] = useState(false);
+  const [initialState, setInitialState] = useState(null);
 
-      setInitialState(state);
+  useEffect(() => {
+    async function initializeApp() {
+      try {
+        // Attempt to load persisted state
+        const state = await hydrateState();
+        setInitialState(state);
 
-      // Initialize sync manager and schedule backup
-      await SyncManager.initialize();
-      await scheduleAutomaticBackup();
-    } catch (error) {
-      console.error('Error initializing app:', error);
-      if (initAttempts < 2) {
-        // Try one more time after clearing data
+        // Initialize background services
+        await SyncManager.initialize();
+        await scheduleAutomaticBackup();
+      } catch (error) {
+        console.error(
+          'Error initializing app, clearing state and starting fresh:',
+          error
+        );
+        // If hydration fails for any reason, clear all data and start fresh.
         await clearPersistedState();
-        setInitAttempts((prev) => prev + 1);
-      } else {
+        setInitialState(null); // Ensure we start with a clean slate
         Alert.alert(
           'Initialization Error',
           'There was a problem loading your data. The app will start with default settings.',
           [{ text: 'OK' }]
         );
+      } finally {
+        // Mark the app as ready to render
+        setIsAppReady(true);
       }
-    } finally {
-      setIsAppReady(true);
     }
-  };
 
-  const { colors, colorScheme } = useColorScheme();
-  const [isAppReady, setIsAppReady] = useState(false);
-  const [initialState, setInitialState] = useState(null);
-  const [initAttempts, setInitAttempts] = useState(0);
-
-  useEffect(() => {
     initializeApp();
-  }, [initAttempts]);
+  }, []); // This effect should only run once on mount
 
   if (!isAppReady) {
     return <LoadingSpinner message="Initializing app..." />;
@@ -81,9 +74,9 @@ function AppProviders({ children }) {
     <ColorSchemeContext.Provider value={{ theme: colorScheme, colors }}>
       <UserProvider>
         <ActivityProvider>
-          <SettingsProvider initialState={initialState?.settings}>
-            <ListProvider initialState={initialState?.lists}>
-              <MallProvider initialState={initialState?.malls}>
+          <SettingsProvider initialState={initialState?.settings || {}}>
+            <ListProvider initialState={initialState?.lists || {}}>
+              <MallProvider initialState={initialState?.malls || {}}>
                 <PriceProvider>
                   {/* The Toast component uses a portal, so it can be a sibling to the navigator */}
                   <>
@@ -116,10 +109,10 @@ function RootLayoutNav() {
   return (
     <Stack screenOptions={{ headerShown: false }}>
       {user ? ( // User is authenticated
-        <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="(tabs)" key="app-tabs" />
       ) : (
         // User is not authenticated
-        <Stack.Screen name="(auth)" />
+        <Stack.Screen name="(auth)" key="app-auth" />
       )}
     </Stack>
   );

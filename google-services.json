@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "977281593090",
+    "project_id": "smart-cart-app-7dbf6",
+    "storage_bucket": "smart-cart-app-7dbf6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:977281593090:android:9f08ee62929243481f1c1b",
+        "android_client_info": {
+          "package_name": "com.maduemelie.smartcart"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBsExLGcrI3VdULcew5RTvOFtoMAt-PGeE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -47,7 +47,7 @@ export default function SignupScreen() {
       await updateUserProfile({
         displayName: name,
       });
-      router.replace('/profile');
+      router.replace('/'); // Redirect to home to let the root layout handle the auth state change
     } catch (error) {
       Alert.alert('Signup Error', error.message);
     } finally {
@@ -56,7 +56,9 @@ export default function SignupScreen() {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }]}
+    >
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <View style={styles.formContainer}>
           <Text style={[styles.title, { color: colors.text.primary }]}>
@@ -68,11 +70,14 @@ export default function SignupScreen() {
 
           <View style={styles.inputContainer}>
             <TextInput
-              style={[styles.input, { 
-                backgroundColor: colors.surface,
-                color: colors.text.primary,
-                borderColor: colors.border,
-              }]}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.surface,
+                  color: colors.text.primary,
+                  borderColor: colors.border,
+                },
+              ]}
               placeholder="Full Name"
               placeholderTextColor={colors.text.secondary}
               value={name}
@@ -82,11 +87,14 @@ export default function SignupScreen() {
             />
 
             <TextInput
-              style={[styles.input, { 
-                backgroundColor: colors.surface,
-                color: colors.text.primary,
-                borderColor: colors.border,
-              }]}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.surface,
+                  color: colors.text.primary,
+                  borderColor: colors.border,
+                },
+              ]}
               placeholder="Email"
               placeholderTextColor={colors.text.secondary}
               value={email}
@@ -97,11 +105,14 @@ export default function SignupScreen() {
             />
 
             <TextInput
-              style={[styles.input, { 
-                backgroundColor: colors.surface,
-                color: colors.text.primary,
-                borderColor: colors.border,
-              }]}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.surface,
+                  color: colors.text.primary,
+                  borderColor: colors.border,
+                },
+              ]}
               placeholder="Password"
               placeholderTextColor={colors.text.secondary}
               value={password}
@@ -112,11 +123,14 @@ export default function SignupScreen() {
             />
 
             <TextInput
-              style={[styles.input, { 
-                backgroundColor: colors.surface,
-                color: colors.text.primary,
-                borderColor: colors.border,
-              }]}
+              style={[
+                styles.input,
+                {
+                  backgroundColor: colors.surface,
+                  color: colors.text.primary,
+                  borderColor: colors.border,
+                },
+              ]}
               placeholder="Confirm Password"
               placeholderTextColor={colors.text.secondary}
               value={confirmPassword}
@@ -134,7 +148,9 @@ export default function SignupScreen() {
               {isLoading ? (
                 <ActivityIndicator color={colors.text.inverse} />
               ) : (
-                <Text style={[styles.buttonText, { color: colors.text.inverse }]}>
+                <Text
+                  style={[styles.buttonText, { color: colors.text.inverse }]}
+                >
                   Sign Up
                 </Text>
               )}
