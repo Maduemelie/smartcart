@@ -13,7 +13,6 @@ const firebaseConfig = {
   appId: process.env.FIREBASE_APP_ID,
   // measurementId: process.env.FIREBASE_MEASUREMENT_ID,
 };
-// ... rest of your firebase.js
 
 // Validate the Firebase configuration to prevent runtime errors, especially in preview/production.
 const requiredKeys = ['apiKey', 'authDomain', 'projectId', 'storageBucket'];
