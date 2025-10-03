@@ -14,18 +14,18 @@ const firebaseConfig = {
   // measurementId: process.env.FIREBASE_MEASUREMENT_ID,
 };
 
-// Validate the Firebase configuration to prevent runtime errors, especially in preview/production.
-const requiredKeys = ['apiKey', 'authDomain', 'projectId', 'storageBucket'];
-const missingKeys = requiredKeys.filter((key) => !firebaseConfig[key]);
+// // Validate the Firebase configuration to prevent runtime errors, especially in preview/production.
+// const requiredKeys = ['apiKey', 'authDomain', 'projectId', 'storageBucket'];
+// const missingKeys = requiredKeys.filter((key) => !firebaseConfig[key]);
 
-if (missingKeys.length > 0) {
-  // This will crash the app with a clear error message if the .env file is not configured correctly.
-  throw new Error(
-    `Firebase config is missing required keys: ${missingKeys.join(
-      ', '
-    )}. Please check your environment variables.`
-  );
-}
+// if (missingKeys.length > 0) {
+//   // This will crash the app with a clear error message if the .env file is not configured correctly.
+//   throw new Error(
+//     `Firebase config is missing required keys: ${missingKeys.join(
+//       ', '
+//     )}. Please check your environment variables.`
+//   );
+// }
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
