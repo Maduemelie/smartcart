@@ -57,7 +57,14 @@
       },
       "eas": {
         "projectId": "955c2fdb-8d7b-46d7-98bf-f764f45bfc45"
-      }
+      },
+      "FIREBASE_API_KEY": "AIzaSyDG0yT0g6gY5Gqh1VdsMjQ5fYb4jgU6cks",
+      "FIREBASE_AUTH_DOMAIN": "smart-cart-app-7dbf6.firebaseapp.com",
+      "FIREBASE_PROJECT_ID": "smart-cart-app-7dbf6",
+      "FIREBASE_STORAGE_BUCKET": "smart-cart-app-7dbf6.firebasestorage.app",
+      "FIREBASE_MESSAGING_SENDER_ID": "977281593090",
+      "FIREBASE_APP_ID": "1:977281593090:web:9d49e79969ec35331f1c1b",
+      "FIREBASE_MEASUREMENT_ID": "G-FY1RPS56R7"
     }
   }
 }

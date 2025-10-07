@@ -2,6 +2,7 @@
 import { initializeApp } from 'firebase/app';
 import { initializeAuth } from 'firebase/auth';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
 // Custom persistence implementation for React Native
 const reactNativePersistence = (storage) => {
@@ -21,15 +22,21 @@ const reactNativePersistence = (storage) => {
   };
 };
 
+// Use environment variables or Expo Constants
 const firebaseConfig = {
-  apiKey: 'AIzaSyDG0yT0g6gY5Gqh1VdsMjQ5fYb4jgU6cks',
-  authDomain: 'smart-cart-app-7dbf6.firebaseapp.com',
-  projectId: 'smart-cart-app-7dbf6',
-  storageBucket: 'smart-cart-app-7dbf6.firebasestorage.app',
-  messagingSenderId: '977281593090',
-  appId: '1:977281593090:web:9d49e79969ec35331f1c1b',
-  measurementId: 'G-FY1RPS56R7',
+  apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY || Constants.expoConfig?.extra?.FIREBASE_API_KEY,
+  authDomain: process.env.EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN || Constants.expoConfig?.extra?.FIREBASE_AUTH_DOMAIN,
+  projectId: process.env.EXPO_PUBLIC_FIREBASE_PROJECT_ID || Constants.expoConfig?.extra?.FIREBASE_PROJECT_ID,
+  storageBucket: process.env.EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET || Constants.expoConfig?.extra?.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || Constants.expoConfig?.extra?.FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.EXPO_PUBLIC_FIREBASE_APP_ID || Constants.expoConfig?.extra?.FIREBASE_APP_ID,
+  measurementId: process.env.EXPO_PUBLIC_FIREBASE_MEASUREMENT_ID || Constants.expoConfig?.extra?.FIREBASE_MEASUREMENT_ID,
 };
+
+// Validate config
+if (!firebaseConfig.apiKey) {
+  throw new Error('Firebase API key is missing. Please check your environment variables or app.json configuration.');
+}
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
