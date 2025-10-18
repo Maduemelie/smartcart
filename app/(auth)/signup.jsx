@@ -25,7 +25,11 @@ export default function SignupScreen() {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSignup = async () => {
-    if (!name || !email || !password || !confirmPassword) {
+    const trimmedName = name.trim();
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedName || !trimmedEmail || !trimmedPassword || !confirmPassword) {
       Alert.alert('Error', 'Please fill in all fields');
       return;
     }
@@ -35,17 +39,17 @@ export default function SignupScreen() {
       return;
     }
 
-    if (password.length < 6) {
+    if (trimmedPassword.length < 6) {
       Alert.alert('Error', 'Password must be at least 6 characters');
       return;
     }
 
     setIsLoading(true);
     try {
-      const userCredential = await signup(email, password);
+      const userCredential = await signup(trimmedEmail, trimmedPassword);
       // Update the user's display name after signup
       await updateUserProfile({
-        displayName: name,
+        displayName: trimmedName,
       });
       router.replace('/'); // Redirect to home to let the root layout handle the auth state change
     } catch (error) {
