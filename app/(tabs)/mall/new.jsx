@@ -20,6 +20,9 @@ import { useMall } from '../../../context/mall/MallContext';
 import { OperatingHours } from '../../../components/OperatingHours';
 import { GooglePlacesAutocomplete } from 'react-native-google-places-autocomplete';
 
+// Define a constant for the API key to be used in the component
+const GOOGLE_MAPS_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY;
+
 export default function NewMall() {
   const { colors } = useColorScheme();
   const { createMall, state } = useMall();
@@ -774,7 +777,7 @@ export default function NewMall() {
                 placeholder="Search for store location"
                 onPress={handleLocationSelect}
                 query={{
-                  key: GOOGLE_MAPS_API_KEY,
+                  key: GOOGLE_MAPS_API_KEY, // This now correctly refers to the constant
                   language: 'en',
                   types: 'establishment',
                 }}
@@ -848,24 +851,16 @@ export default function NewMall() {
                 }}
               />
             ) : (
-              <TextInput
-                style={[
-                  styles.input,
-                  {
-                    backgroundColor: colors.surface,
-                    color: colors.text.primary,
-                    borderColor: errors.address
-                      ? Colors.error.main
-                      : colors.border,
-                  },
-                ]}
-                value={mallData.address}
-                onChangeText={(text) => updateField('address', text)}
-                placeholder="Enter store address manually"
-                placeholderTextColor={colors.text.secondary}
-                multiline
-                numberOfLines={2}
-              />
+              <Text
+                style={{
+                  color: colors.text.secondary,
+                  textAlign: 'center',
+                  marginTop: 20,
+                }}
+              >
+                Google Maps API key is missing. Manual entry is available on the
+                main form.
+              </Text>
             )}
           </View>
         </SafeAreaView>
