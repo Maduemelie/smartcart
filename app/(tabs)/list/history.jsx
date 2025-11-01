@@ -9,10 +9,17 @@ export default function History() {
   const { colors } = useColorScheme();
   const { state: mallState } = useMall();
   const { purchaseHistory } = state;
+  
+  // Sort purchase history to show most recent items first
+  const sortedPurchaseHistory = [...purchaseHistory].sort((a, b) => 
+    new Date(b.datePurchased) - new Date(a.datePurchased)
+  );
+
   console.log('Current List State:', state);
   console.log('Purchase History:', purchaseHistory);
 
   const renderHistoryItem = ({ item }) => {
+    console.log('Rendering history item:', item); // Added for debugging
     // Get list name for better UX
     const list = state.lists.find((l) => l.id === item.listId);
     // Get store name for better UX
@@ -26,11 +33,12 @@ export default function History() {
 
         <View style={styles.metaRow}>
           <Text style={[styles.metaText, { color: colors.text.secondary }]}>
-            Qty: {item.quantity} {item.unit}
+            Qty: {item.quantity || 1} {item.unit || ''}
           </Text>
-          {item.price && (
+          {/* Check if price exists and is valid, handling various data types */}
+          {(item.price !== undefined && item.price !== null) && (
             <Text style={[styles.metaText, { color: colors.text.primary }]}>
-              Price: ₦{item.price.toFixed(2)}
+              Price: ₦{Number(item.price).toFixed(2)}
             </Text>
           )}
         </View>
@@ -57,7 +65,7 @@ export default function History() {
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <FlatList
-        data={purchaseHistory}
+        data={sortedPurchaseHistory}
         renderItem={renderHistoryItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}

@@ -105,8 +105,12 @@ export function listReducer(state, action) {
       };
 
       const historyItem = {
-        ...purchasedItem,
-        itemId: item.id, // Explicitly store the original item's ID
+        ...item, // Start with the original item's properties (name, quantity, unit)
+        price, // Add the price
+        storeId, // Add the storeId
+        listId, // Add the listId
+        datePurchased: purchasedItem.datePurchased, // Use the same timestamp
+        itemId: item.id, // Keep the original item's ID for reference
         id: `hist-${item.id}-${new Date().getTime()}`, // This is a unique ID for the history entry itself
       };
 

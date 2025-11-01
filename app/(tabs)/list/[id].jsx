@@ -47,6 +47,7 @@ export default function ListDetailScreen() {
   const [editingItem, setEditingItem] = useState(null);
   const [showStoreModal, setShowStoreModal] = useState(false);
   const [selectedStoreId, setSelectedStoreId] = useState(null);
+  const [activeItemId, setActiveItemId] = useState(null); // To track which item's price input is open
 
   const currentList = getListById(id);
   const shoppingItems = getListItems(id);
@@ -96,6 +97,7 @@ export default function ListDetailScreen() {
       price,
       selectedStore?.name
     );
+    setActiveItemId(null); // Close the input after marking as purchased
   };
 
   const handleMoveBack = (itemId) => {
@@ -149,6 +151,7 @@ export default function ListDetailScreen() {
         onPress: () => {
           console.log('Delete confirmed for:', itemId);
           removeItem(id, itemId);
+          if (activeItemId === itemId) setActiveItemId(null); // Reset if the active item is deleted
         },
       },
     ]);
@@ -273,6 +276,11 @@ export default function ListDetailScreen() {
             onMarkPurchased={handleMarkPurchased}
             onEdit={handleEditItem}
             onDelete={handleDeleteItem}
+            isActive={activeItemId === item.id}
+            onSetActive={() => {
+              setShowQuickAdd(false); // Close the modal if it's open
+              setActiveItemId(item.id); // Set the current item as active
+            }}
             colors={colors}
           />
         )}
@@ -290,7 +298,10 @@ export default function ListDetailScreen() {
             </Text>
           </View>
         )}
-        contentContainerStyle={styles.listContent}
+        // Add padding to the bottom of the list content.
+        // This ensures the last item doesn't hide behind the FAB,
+        // especially when the "Purchased" section isn't visible.
+        contentContainerStyle={[styles.listContent, { paddingBottom: 80 }]}
       />
 
       {/* Purchased Items Section */}
@@ -325,7 +336,10 @@ export default function ListDetailScreen() {
                   colors={colors}
                 />
               )}
+              // This prevents the inner list from trying to scroll independently.
               scrollEnabled={false}
+              // Add padding here as well, so the last purchased item isn't blocked by the FAB.
+              style={{ paddingBottom: 80 }}
             />
           )}
         </View>
@@ -336,6 +350,8 @@ export default function ListDetailScreen() {
         style={[styles.fab, { backgroundColor: colors.primary }]}
         onPress={() => {
           console.log('FAB pressed');
+          // First, close any open item price input
+          setActiveItemId(null);
           setShowQuickAdd(true);
         }}
       >
@@ -423,6 +439,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     padding: 16,
+    // paddingBottom will be added dynamically
   },
   purchasedSection: {
     borderTopWidth: 1,

@@ -7,18 +7,21 @@ export const ShoppingItem = ({
   onMarkPurchased,
   onEdit,
   onDelete,
+  isActive,
+  onSetActive,
   colors,
 }) => {
-  const [showPriceInput, setShowPriceInput] = useState(false);
   const [price, setPrice] = useState('');
 
   const handleMarkPurchased = () => {
-    if (showPriceInput) {
+    // If the input is already active for this item, mark it as purchased.
+    if (isActive) {
       onMarkPurchased(item.id, parseFloat(price) || 0);
       setPrice('');
-      setShowPriceInput(false);
+      // The parent will set activeItemId to null, closing the input.
     } else {
-      setShowPriceInput(true);
+      // If not active, tell the parent screen to make this item the active one.
+      onSetActive();
     }
   };
 
@@ -63,7 +66,8 @@ export const ShoppingItem = ({
         </View>
       </View>
 
-      {showPriceInput && (
+      {/* The visibility is now controlled by the `isActive` prop from the parent */}
+      {isActive && (
         <View style={[styles.priceInput, { borderTopColor: colors.border }]}>
           <TextInput
             style={[
